@@ -12,3 +12,24 @@ Understanding how it spreads is vital because of its unique biological and epide
 Because ANDV transmission is heavily influenced by local environmental exposure and social behavior, traditional aggregate epidemiological models fail to capture how individual movements affect infection risk.
 
 To address this we will model these dynamics using an agent-based spatial grid simulation ([ContagionRL](https://openreview.net/forum?id=yPEASsx3hk) paradigm).
+
+## How to run:
+First create the environment:
+
+```bash
+conda create --name environment.yml
+conda activate ContagionRL
+```
+
+Clone ContagionRL repo, to use its functionalities.
+
+*Move* **train_modified.py** (version with video rendering bug solved) to **ContagionRL** *folder*, *change filename* to **train.py**.
+
+In *ContagionRL/figureTraining/* there are some examples of simulations, to run them with video rendering use the flag "--record-video".
+
+```bash
+#Example
+python "ContagionRL/figureTraining/train_figure1_models.py" --record-video
+```
+
+You'll find a videos folder inside the new logs folder.

@@ -17,7 +17,7 @@ To address this we will model these dynamics using an agent-based spatial grid s
 First create the environment:
 
 ```bash
-conda create --name environment.yml
+conda env create --file environment.yml
 conda activate ContagionRL
 ```
 

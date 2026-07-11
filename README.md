@@ -23,13 +23,13 @@ conda activate ContagionRL
 
 Clone ContagionRL repo, to use its functionalities.
 
-*Move* **train_modified.py** (version with video rendering bug solved) to **ContagionRL** *folder*, *change filename* to **train.py**.
+*Build* files to run **train_modified.py** (version with video rendering bug solved).
 
-In *ContagionRL/figureTraining/* there are some examples of simulations, to run them with video rendering use the flag "--record-video".
+In *ContagionRL/figureTraining/* there are some examples of simulations you can adapt them to work with **train_modified.py**, to run them with video rendering use the flag "--record-video".
 
 ```bash
 #Example
-python "ContagionRL/figureTraining/train_figure1_models.py" --record-video
+python "train_figure_visibility_changes.py" --record-video
 ```
 
-You'll find a videos folder inside the new logs folder.
+You'll find a videos folder inside the new logs folder to see your current agent behaviour evolution.

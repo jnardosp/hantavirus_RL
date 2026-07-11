@@ -222,3 +222,4 @@ ContagionRL/
 wandb/
 .vscode/
 logs/
+.DS_Store

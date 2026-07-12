@@ -11,21 +11,22 @@ steps_per_day = estimate_steps_per_day(grid_size)
 env_config = {
     "simulation_time": 512,        
     "grid_size": grid_size,               
-    "n_humans": 40,                
-    "n_infected": 10,              
-    "beta": day_to_step_prob(0.3, steps_per_day),   # Transmission rate during contact median reproductive number (R) was 2.12                
+    "n_humans": 40,          
+    "n_infected": 5,              
+    "beta": day_to_step_prob(0.3, steps_per_day),   # Transmission rate during contact median reproductive number (R) was 2.12 (“Super-Spreaders” and Person-to-Person Transmission of Andes Virus in Argentina Dec 2020)               
     "initial_agent_adherence": 0.05,  
     "distance_decay": 0.15,    
-    "lethality": day_to_step_prob(0.32, steps_per_day),    # case fatality rate (CFR) of 32.35% (other reports between 20-50%)
-    "immunity_loss_prob": 0.25,    # no evidence suggesting short-term reinfection.
-    "recovery_rate": day_to_step_prob(0.06, steps_per_day),    # acute phase and resolution clears within 14 to 20 days post-prodrome
+    "lethality": day_to_step_prob(0.32, steps_per_day),    # case fatality rate (CFR) of 32.35% (other reports between 20-50%) (“Super-Spreaders” and Person-to-Person Transmission of Andes Virus in Argentina Dec 2020)
+    "immunity_loss_prob": 0,    # no evidence suggesting short-term reinfection.
+    "recovery_rate": day_to_step_prob(0.06, steps_per_day),    # acute phase and resolution clears within 14 to 20 days post-prodrome (Person-to-Person Transmission of Andes Virus 2005)
     "adherence_penalty_factor": 1, 
     "adherence_effectiveness": 0.2,         
     "movement_type": "continuous_random",  
-    "movement_scale": 1,          
+    "movement_scale": 1,   
+    "n_rats": 4, 
     "visibility_radius": -1,               
     "reinfection_count": 0,        
-    "safe_distance": 3,    # aerosolized and droplet boundaries dictate this strict spatial threshold                    
+    "safe_distance": 3,    # aerosolized and droplet boundaries dictate this strict spatial threshold (Evidence for Human-to-Human Transmission of Hantavirus: A Systematic Review 2021)                    
     "init_agent_distance": 5,      
     "max_distance_for_beta_calculation": 3,    # match safe_distance
     "reward_type": "potential_field", 

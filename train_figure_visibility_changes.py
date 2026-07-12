@@ -41,7 +41,7 @@ def main_fig9_trainer(args):
 
         # Create descriptive run name
         visibility_str = "FullVis" if visibility_radius == -1 else f"Vis{visibility_radius}"
-        base_run_name_for_group = f"Fig_{visibility_str}"
+        base_run_name_for_group = f"Fig_rat_{visibility_str}"
         if args.exp_suffix:
             base_run_name_for_group = f"{base_run_name_for_group}_{args.exp_suffix}"
 

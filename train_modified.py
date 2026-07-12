@@ -13,7 +13,7 @@ from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback,
 import wandb
 from wandb.integration.sb3 import WandbCallback
 import imageio
-from ContagionRL.environment import SIRSDEnvironment
+from h_environment import SIRSDEnvironment
 from h_config import env_config, ppo_config, save_config
 
 class EntropyCoefCallback(BaseCallback):

@@ -521,6 +521,7 @@ class RatMovementHandler:
         self.max_velocity = 1.0
         self.velocities = {}  # {rat_id: [vx, vy]} for continuous_random
         self.vision_radius = 4 
+        self.smell = self.vision_radius + 4
         self.escape_probability = 0.95
 
         valid_types = ["stationary", "discrete_random", "continuous_random", "wall_random", "fear_random"]
@@ -578,7 +579,7 @@ class RatMovementHandler:
                     self.velocities[i] = [vx, vy]
         return positions
 
-    def get_new_position(self, x: float, y: float, rng: np.random.Generator, rat_id: int, humans: List) -> Tuple[float, float]:
+    def get_new_position(self, x: float, y: float, rng: np.random.Generator, rat_id: int, humans: List, cheeses: List) -> Tuple[float, float]:
         """Get the new position for a rat based on the configured movement type."""
         if self.movement_type == "stationary":
             return x, y
@@ -589,7 +590,7 @@ class RatMovementHandler:
         elif self.movement_type == "wall_random":
             return self._wall_random_move(rat_id, rng)
         elif self.movement_type == "fear_random":
-            return self._fear_random_move(x, y, humans, rng)
+            return self._fear_random_move(x, y, humans, cheeses, rng)
         else:
             raise ValueError(f"Invalid rat movement type: {self.movement_type}")
 
@@ -642,20 +643,38 @@ class RatMovementHandler:
         new_idx = (current_idx + step) % cycle_len
         self.perimeter_indices[rat_id] = new_idx
         return self._perimeter_cycle[new_idx]
-    
-    def _fear_random_move(self, x: float, y: float, humans: List, rng: np.random.Generator):
+
+    def _move_to_cheese(self, x: float, y: float, cheeses: List, rng: np.random.Generator)  -> Tuple[float, float]:
+        if len(cheeses) == 0:
+            return self._continuous_random_move(x, y, None, rng)
+        
+        nearest = min(cheeses, key=lambda c: np.hypot(c.x - x, c.y - y))
+        dx, dy = nearest.get_position()
+
+        if dx == 0 and dy == 0:
+            return self._discrete_random_move(x, y, rng)
+        
+        step_x = int(np.sign(dx))
+        step_y = int(np.sign(dy))
+
+        new_x = (x + step_x) % self.grid_size
+        new_y = (y + step_y) % self.grid_size
+
+        return new_x, new_y
+        
+    def _fear_random_move(self, x: float, y: float, humans: List, cheeses: List, rng: np.random.Generator) -> Tuple[float, float]:
         """
         The random movement is conditioned by the fear of nearby humans—determined
         by the rat's field of vision—and the boundaries of the grid. If no humans 
         are present, the rat moves randomly and continuously
         """
         if len(humans) == 0:
-            return self._continuous_random_move(x, y, None, rng)
+            return self._move_to_cheese(x, y, cheeses, rng)
         
         nearest = min(humans, key=lambda h: np.hypot(h.x - x, h.y - y))
 
         if rng.random() > self.escape_probability:
-            return self._continuous_random_move(x, y, None, rng)
+            return self._move_to_cheese(x, y, cheeses, rng)
 
         dx, dy = nearest.get_movement_direction()
 
@@ -732,6 +751,11 @@ class Cheese:
         self.x = x
         self.y = y
         self.num = num
+
+    def get_position(self) -> Tuple[float, float]:
+        fix_x = self.x
+        fix_y = self.y
+        return fix_x, fix_y
 
 ######## Excreta class ########
 class Excreta:
@@ -1361,13 +1385,24 @@ class SIRSDEnvironment(gym.Env):
                 )
                 if distance <= self.rat_movement_handler.vision_radius:
                     visible_humans.append(human)
+            
+            # verify how many cheeses are in the rat's smell field
+            smell_cheeses = []
+            for cheese in self.cheeses:
+                distance = np.hypot(
+                    cheese.x - rat.x,
+                    cheese.y - rat.y
+                )
+                if distance <= self.rat_movement_handler.smell:
+                    smell_cheeses.append(cheese)
 
             new_x, new_y = self.rat_movement_handler.get_new_position(
                 rat.x,
                 rat.y,
                 self.np_random,
                 rat_id=rat.id,
-                humans=visible_humans
+                humans=visible_humans,
+                cheeses=smell_cheeses
             )
             rat.move(new_x, new_y)
 

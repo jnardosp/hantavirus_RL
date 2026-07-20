@@ -11,8 +11,8 @@ steps_per_day = estimate_steps_per_day(grid_size)
 env_config = {
     "simulation_time": 512,        
     "grid_size": grid_size,               
-    "n_humans": 40,          
-    "n_infected": 5,              
+    "n_humans": 20,          
+    "n_infected": 7,              
     "beta": day_to_step_prob(0.3, steps_per_day),   # Transmission rate during contact median reproductive number (R) was 2.12 (“Super-Spreaders” and Person-to-Person Transmission of Andes Virus in Argentina Dec 2020)               
     "initial_agent_adherence": 0.05,  
     "distance_decay": 0.15,    

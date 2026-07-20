@@ -30,6 +30,7 @@ class MovementHandler:
         self.momentum = 0.8 
         self.max_acceleration = 0.2 
         self.max_velocity = 1.0
+        self.min_speed_fraction = 0.13  # floor on speed, as a fraction of max_velocity, to stop the momentum-driven walk from decaying to a near standstill
         self.velocities = {}
         valid_types = ["stationary", "discrete_random", "continuous_random", "circular_formation", "workplace_home_cycle"]
         if movement_type not in valid_types:
@@ -264,6 +265,20 @@ class MovementHandler:
         if speed > self.max_velocity:
             vx = (vx / speed) * self.max_velocity
             vy = (vy / speed) * self.max_velocity
+        else:
+            # Floor: the momentum update above decays noise fast enough that speed
+            # otherwise collapses toward ~0 within a few dozen steps. Rescale back
+            # up to a minimum speed (keeping direction) instead of letting it stall.
+            min_speed = self.min_speed_fraction * self.max_velocity
+            if speed < min_speed:
+                if speed > 1e-9:
+                    scale = min_speed / speed
+                    vx *= scale
+                    vy *= scale
+                else:
+                    angle = rng.uniform(0, 2 * math.pi)
+                    vx = min_speed * math.cos(angle)
+                    vy = min_speed * math.sin(angle)
         
         # Apply movement scaling factor for non-focal agents
         vx = vx * self.movement_scale
@@ -519,6 +534,7 @@ class RatMovementHandler:
         self.momentum = 0.8
         self.max_acceleration = 0.2
         self.max_velocity = 1.0
+        self.min_speed_fraction = 0.2  # similar speed floor as MovementHandler, to keep rats moving between fear/cheese events
         self.velocities = {}  # {rat_id: [vx, vy]} for continuous_random
         self.vision_radius = 4 
         self.smell = self.vision_radius + 4
@@ -623,6 +639,20 @@ class RatMovementHandler:
         if speed > self.max_velocity:
             vx = (vx / speed) * self.max_velocity
             vy = (vy / speed) * self.max_velocity
+        else:
+            # Same speed floor as MovementHandler - without it, rats that fall back
+            # to this branch (no human in vision, no cheese in smell range) settle
+            # into near-zero drift within a few dozen steps.
+            min_speed = self.min_speed_fraction * self.max_velocity
+            if speed < min_speed:
+                if speed > 1e-9:
+                    scale = min_speed / speed
+                    vx *= scale
+                    vy *= scale
+                else:
+                    angle = rng.uniform(0, 2 * math.pi)
+                    vx = min_speed * math.cos(angle)
+                    vy = min_speed * math.sin(angle)
 
         self.velocities[rat_id] = [vx, vy]
 
@@ -902,8 +932,8 @@ class SIRSDEnvironment(gym.Env):
         n_rats: int = 5,  # number of rats in the environment
         n_cheeses: int = 8, # number of cheeses in the environment
         rat_movement_type: str = "fear_random",  # one of ["stationary", "discrete_random", "continuous_random", "wall_random", "fear_random"]
-        rat_excretion_prob: float = 0.08,  # probability a rat leaves excreta on a given step
-        excreta_lifespan: int = 15,  # number of steps before a pile of excreta disappears
+        rat_excretion_prob: float = 0.04,  # probability a rat leaves excreta on a given step
+        excreta_lifespan: int = 65,  # number of steps before a pile of excreta disappears
         visibility_radius: float = -1,  # -1 means full visibility, >=0 means limited visibility
         rounding_digits: int = 2,
         reinfection_count: int = 3,

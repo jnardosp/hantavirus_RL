@@ -676,17 +676,20 @@ class RatMovementHandler:
 
     def _move_to_cheese(self, x: float, y: float, cheeses: List, rng: np.random.Generator)  -> Tuple[float, float]:
         if len(cheeses) == 0:
+            # Note: pass a valid rat_id or default if needed by _continuous_random_move
             return self._continuous_random_move(x, y, None, rng)
-        
+    
         nearest = min(cheeses, key=lambda c: np.hypot(c.x - x, c.y - y))
         cx, cy = nearest.get_position()
 
-        if dx == 0 and dy == 0:
-            return self._discrete_random_move(x, y, rng)
-        
+        # Calculate displacements first
         dx = cx - x
         dy = cy - y
 
+        # Now check if the rat is already on top of the cheese
+        if dx == 0 and dy == 0:
+            return self._discrete_random_move(x, y, rng)
+        
         step_x = int(np.sign(dx))
         step_y = int(np.sign(dy))
 

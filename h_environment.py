@@ -536,7 +536,7 @@ class RatMovementHandler:
         self.max_velocity = 1.0
         self.min_speed_fraction = 0.2  # similar speed floor as MovementHandler, to keep rats moving between fear/cheese events
         self.velocities = {}  # {rat_id: [vx, vy]} for continuous_random
-        self.vision_radius = 4 
+        self.vision_radius = 2
         self.smell = self.vision_radius + 4
         self.escape_probability = 0.95
 
@@ -679,11 +679,14 @@ class RatMovementHandler:
             return self._continuous_random_move(x, y, None, rng)
         
         nearest = min(cheeses, key=lambda c: np.hypot(c.x - x, c.y - y))
-        dx, dy = nearest.get_position()
+        cx, cy = nearest.get_position()
 
         if dx == 0 and dy == 0:
             return self._discrete_random_move(x, y, rng)
         
+        dx = cx - x
+        dy = cy - y
+
         step_x = int(np.sign(dx))
         step_y = int(np.sign(dy))
 

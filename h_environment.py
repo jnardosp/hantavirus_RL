@@ -520,6 +520,8 @@ class RatMovementHandler:
         self.max_acceleration = 0.2
         self.max_velocity = 1.0
         self.velocities = {}  # {rat_id: [vx, vy]} for continuous_random
+        self.vision_radius = 3
+        self.escape_probability = 0.95
 
         valid_types = ["stationary", "discrete_random", "continuous_random", "wall_random"]
         if rat_movement_type not in valid_types:
@@ -576,7 +578,7 @@ class RatMovementHandler:
                     self.velocities[i] = [vx, vy]
         return positions
 
-    def get_new_position(self, x: float, y: float, rng: np.random.Generator, rat_id: int) -> Tuple[float, float]:
+    def get_new_position(self, x: float, y: float, rng: np.random.Generator, rat_id: int, humans: List) -> Tuple[float, float]:
         """Get the new position for a rat based on the configured movement type."""
         if self.movement_type == "stationary":
             return x, y
@@ -586,6 +588,8 @@ class RatMovementHandler:
             return self._continuous_random_move(x, y, rat_id, rng)
         elif self.movement_type == "wall_random":
             return self._wall_random_move(rat_id, rng)
+        elif self.movement_type == "fear_random":
+            return self._fear_random_move(x, y, humans, rng)
         else:
             raise ValueError(f"Invalid rat movement type: {self.movement_type}")
 
@@ -638,7 +642,32 @@ class RatMovementHandler:
         new_idx = (current_idx + step) % cycle_len
         self.perimeter_indices[rat_id] = new_idx
         return self._perimeter_cycle[new_idx]
+    
+    def _fear_random_move(self, x: float, y: float, humans: List, rng: np.random.Generator):
+        """
+        Random
+        humans is a list of the humans in a 5 capacity of vision field
+        """
+        if len(humans) == 0:
+            return self._continuous_random_move(x, y, None, rng)
+        
+        nearest = min(humans, key=lambda h: np.hypot(h.x - x, h.y - y))
 
+        if rng.random() > self.escape_probability:
+            return self._continuous_random_move(x, y, None, rng)
+
+        dx, dy = nearest.get_movement_direction()
+
+        if dx == 0 and dy == 0:
+            return self._discrete_random_move(x, y, rng)
+
+        step_x = -int(np.sign(dx))
+        step_y = -int(np.sign(dy))
+
+        new_x = (x + step_x) % self.grid_size
+        new_y = (y + step_y) % self.grid_size
+
+        return new_x, new_y
 
 ######## Human class ########
 class Human:
@@ -663,14 +692,23 @@ class Human:
             
         self.x = x
         self.y = y
+        self.prev_x = x
+        self.prev_y = y
         self.state = state
         self.time_in_state = time_in_state
         assert self.state in STATE_DICT.values() # make sure no invalid state is passed in
+
+    def get_movement_direction(self): # returns direction of the movement of a human
+        dx = self.x - self.prev_x
+        dy = self.y - self.prev_y
+        return dx, dy
 
     def move(self, new_x: int, new_y: int, grid_size: int):
         """Move human to new position within grid bounds"""
         assert new_x >= 0 and new_x <= grid_size, "new_x is out of bounds"
         assert new_y >= 0 and new_y <= grid_size, "new_y is out of bounds"
+        self.prev_x = self.x
+        self.prev_y = self.y
         self.x = new_x
         self.y = new_y
 
@@ -678,6 +716,21 @@ class Human:
         """Update state and reset time counter"""
         self.state = new_state
         self.time_in_state = 0
+
+######## Cheese class ########
+class Cheese:
+    _next_id = 1
+
+    def __init__(self, x: float, y: float, num: int, id: int = None):
+        if id is None:
+            self.id = Cheese._next_id
+            Cheese._next_id += 1
+        else:
+            self.id = id
+        
+        self.x = x
+        self.y = y
+        self.num = num
 
 ######## Excreta class ########
 class Excreta:
@@ -717,7 +770,6 @@ class Excreta:
     def is_expired(self) -> bool:
         return self.age >= self.lifespan
 
-
 ######## Rat class ########
 class Rat:
     """
@@ -744,7 +796,23 @@ class Rat:
 
         self.x = x
         self.y = y
+        self.fed = False
+        self.digest_steps = 0
+        self.base_excretion_prob = excretion_prob # it is used to stablish a new probability of excretion when a rat eats cheese
         self.excretion_prob = excretion_prob
+
+    def eat_cheese(self, digestion_time: int = 10):
+        self.fed = True
+        self.digest_steps = digestion_time
+        self.excretion_prob = self.base_excretion_prob + 0.10
+
+    def update(self):
+        if self.digest_steps > 0:
+            self.digest_steps -= 1
+
+        if self.digest_steps == 0:
+            self.fed = False
+            self.excretion_prob = self.base_excretion_prob
 
     def move(self, new_x: float, new_y: float):
         """Move the rat to a new position."""
@@ -781,6 +849,7 @@ class SIRSDEnvironment(gym.Env):
         'D': '#868e96',              # Neutral gray for Dead
         'rat': '#2f9e44',             # Green for rats
         'excreta': '#0b2e13',         # Darkest green for rat excreta
+        'cheese': '#FFD700',         # Golden yellow for cheeses
         'text': '#212529',           # Dark text
         'arrow': '#212529',          # Dark arrow
         'table_bg': '#ffffff',       # White table background
@@ -803,8 +872,9 @@ class SIRSDEnvironment(gym.Env):
         adherence_effectiveness: float = 0.2,  # effect of adherence (0.2 = 20% of beta remains at max adherence).
         movement_type: str = "continuous_random",
         movement_scale: float = 1.0, 
-        n_rats: int = 0,  # number of rats in the environment
-        rat_movement_type: str = "wall_random",  # one of ["stationary", "discrete_random", "continuous_random", "wall_random"]
+        n_rats: int = 5,  # number of rats in the environment
+        n_cheeses: int = 5, # number of cheeses in the environment
+        rat_movement_type: str = "fear_random",  # one of ["stationary", "discrete_random", "continuous_random", "wall_random", "fear_random"]
         rat_excretion_prob: float = 0.08,  # probability a rat leaves excreta on a given step
         excreta_lifespan: int = 15,  # number of steps before a pile of excreta disappears
         visibility_radius: float = -1,  # -1 means full visibility, >=0 means limited visibility
@@ -939,6 +1009,12 @@ class SIRSDEnvironment(gym.Env):
         self.rat_movement_handler = RatMovementHandler(grid_size, rat_movement_type, rounding_digits=self.rounding_digits)
         self.rats: List[Rat] = []
         self.excreta: List[Excreta] = []
+
+        ##############################
+        ####### Cheese
+        ##############################
+        self.n_cheeses = n_cheeses
+        self.cheeses: List[Cheese] = []
         
         # Store reward type
         self.reward_type = reward_type
@@ -1092,6 +1168,34 @@ class SIRSDEnvironment(gym.Env):
         for i in range(self.n_infected):
             self.humans[i].update_state(STATE_DICT['I'])
 
+        # initialize cheeses in positions where are not any entity
+        self.cheeses = []
+        for i in range(self.n_cheeses):
+            while True:
+                x = int(self.np_random.integers(0, self.grid_size))
+                y = int(self.np_random.integers(0, self.grid_size))
+                occupied = False
+                for rat in self.rats:
+                    if rat.x == x and rat.y == y:
+                        occupied = True
+                        break
+                if occupied:
+                    continue
+                for human in self.humans:
+                    if human.x == x and human.y == y:
+                        occupied = True
+                        break
+                if occupied:
+                    continue
+                self.cheeses.append(
+                    Cheese(
+                        x=x,
+                        y=y,
+                        num=i+1
+                    )
+                )
+                break
+
         # Initialize rats and clear any excreta from a previous episode
         self.rats = []
         self.excreta = []
@@ -1243,13 +1347,55 @@ class SIRSDEnvironment(gym.Env):
         """
         # Move rats and possibly leave new excreta
         for rat in self.rats:
+            # verify how many humans are in the rat's vision field
+            visible_humans = []
+            for human in self.humans:
+                if human.state == STATE_DICT["D"]:
+                    continue
+                distance = np.hypot(
+                    human.x - rat.x,
+                    human.y - rat.y
+                )
+                if distance <= self.rat_movement_handler.vision_radius:
+                    visible_humans.append(human)
+
             new_x, new_y = self.rat_movement_handler.get_new_position(
                 rat.x,
                 rat.y,
                 self.np_random,
-                rat_id=rat.id
+                rat_id=rat.id,
+                humans=visible_humans
             )
             rat.move(new_x, new_y)
+
+            # monitor when a rat eats cheese and keep the amount of cheese in the environment constant
+            for cheese in self.cheeses[:]:
+                if rat.x == cheese.x and rat.y == cheese.y:
+                    rat.eat_cheese()
+                    self.cheeses.remove(cheese)
+                    while len(self.cheeses) < self.n_cheeses:
+                        while True:
+                            x = int(self.np_random.integers(0, self.grid_size))
+                            y = int(self.np_random.integers(0, self.grid_size))
+                            occupied = False
+                            for other in self.cheeses:
+                                if other.x == x and other.y == y:
+                                    occupied = True
+                                    break
+                            if occupied:
+                                continue
+                            self.cheeses.append(
+                                Cheese(
+                                    x=x,
+                                    y=y,
+                                    num=len(self.cheeses)+1
+                                )
+                            )
+                            break
+                    break
+            
+            # change the state of the rat
+            rat.update()
 
             new_excreta = rat.maybe_leave_excreta(self.np_random, self.excreta_lifespan)
             if new_excreta is not None:
@@ -1682,7 +1828,7 @@ class SIRSDEnvironment(gym.Env):
             ax_grid.axhline(y=i, color=self.COLORS['grid_lines'], linewidth=0.5, alpha=0.5)
             ax_grid.axvline(x=i, color=self.COLORS['grid_lines'], linewidth=0.5, alpha=0.5)
 
-        # Plot excreta (drawn first so it sits beneath humans/rats/agent)
+        # Plot excreta (drawn first so it sits beneath cheeses/humans/rats/agent)
         if self.excreta:
             ex_x = [e.x for e in self.excreta]
             ex_y = [e.y for e in self.excreta]
@@ -1694,6 +1840,21 @@ class SIRSDEnvironment(gym.Env):
                           label='Excreta',
                           edgecolors='none',
                           zorder=1)
+
+        # Plot cheeses
+        if self.cheeses:
+            cheese_x = [c.x for c in self.cheeses]
+            cheese_y = [c.y for c in self.cheeses]
+            ax_grid.scatter(
+                cheese_x,
+                cheese_y,
+                c=self.COLORS['cheese'],
+                s=70,
+                alpha=0.95,
+                marker='*',
+                label='Cheese',
+                edgecolors='none',
+                zorder=2)
 
         # Plot humans by state with enhanced styling
         state_labels = {

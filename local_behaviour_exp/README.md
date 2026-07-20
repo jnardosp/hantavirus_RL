@@ -13,11 +13,11 @@ Because ANDV transmission is heavily influenced by local environmental exposure 
 
 To address this we will model these dynamics using an agent-based spatial grid simulation ([ContagionRL](https://openreview.net/forum?id=yPEASsx3hk) paradigm).
 
-## How to run:
+## How to run local_behaviour_experiment:
 First create the environment:
 
 ```bash
-conda env create --file environment.yml
+conda env create --file local_behaviour_exp/environment.yml
 conda activate ContagionRL
 ```
 

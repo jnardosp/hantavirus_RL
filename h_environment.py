@@ -1406,7 +1406,15 @@ class SIRSDEnvironment(gym.Env):
         for rat in self.rats:
             # verify how many humans are in the rat's vision field
             visible_humans = []
-            for human in self.humans:
+            # the rat perceives the agent as a human
+            agent_human = Human(
+                x=self.agent_position[0],
+                y=self.agent_position[1],
+                state=self.agent_state,
+                id=-1
+            )
+            all_humans = self.humans + [agent_human]
+            for human in all_humans:
                 if human.state == STATE_DICT["D"]:
                     continue
                 distance = np.hypot(
@@ -1436,31 +1444,11 @@ class SIRSDEnvironment(gym.Env):
             )
             rat.move(new_x, new_y)
 
-            # monitor when a rat eats cheese and keep the amount of cheese in the environment constant
+            # monitor when a rat eats cheese
             for cheese in self.cheeses[:]:
                 if rat.x == cheese.x and rat.y == cheese.y:
                     rat.eat_cheese()
                     self.cheeses.remove(cheese)
-                    while len(self.cheeses) < self.n_cheeses:
-                        while True:
-                            x = int(self.np_random.integers(0, self.grid_size))
-                            y = int(self.np_random.integers(0, self.grid_size))
-                            occupied = False
-                            for other in self.cheeses:
-                                if other.x == x and other.y == y:
-                                    occupied = True
-                                    break
-                            if occupied:
-                                continue
-                            self.cheeses.append(
-                                Cheese(
-                                    x=x,
-                                    y=y,
-                                    num=len(self.cheeses)+1
-                                )
-                            )
-                            break
-                    break
             
             # change the state of the rat
             rat.update()

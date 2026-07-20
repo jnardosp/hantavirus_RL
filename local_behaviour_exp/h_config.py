@@ -1,7 +1,7 @@
 from torch import nn
 
 # we created a conversion from day estimations to simulation-step values
-from rate_conversion import estimate_steps_per_day, day_to_step_prob
+from local_behaviour_exp.utils.rate_conversion import estimate_steps_per_day, day_to_step_prob
 
 grid_size = 50
 

@@ -13,8 +13,8 @@ from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback,
 import wandb
 from wandb.integration.sb3 import WandbCallback
 import imageio
-from h_environment import SIRSDEnvironment
-from h_config import env_config, ppo_config, save_config
+from local_behaviour_exp.h_environment import SIRSDEnvironment
+from local_behaviour_exp.h_config import env_config, ppo_config, save_config
 
 class EntropyCoefCallback(BaseCallback):
     """

@@ -7,12 +7,12 @@ import copy
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(PROJECT_ROOT)
 
-from h_config import env_config as global_env_config_template
-from h_config import ppo_config as global_ppo_config_template
-from h_config import save_config as global_save_config_template
+from local_behaviour_exp.h_config import env_config as global_env_config_template
+from local_behaviour_exp.h_config import ppo_config as global_ppo_config_template
+from local_behaviour_exp.h_config import save_config as global_save_config_template
 
 try:
-    from train_modified import execute_single_training_run
+    from local_behaviour_exp.train_modified import execute_single_training_run
 except ImportError as e:
     print(f"Error importing execute_single_training_run from train.py: {e}")
     print("Please ensure train.py is in the project root and has been refactored.")

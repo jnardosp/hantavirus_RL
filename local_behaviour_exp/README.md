@@ -21,7 +21,7 @@ conda env create --file environment.yml
 conda activate ContagionRL
 ```
 
-You can clone ContagionRL repo, to use its base experiments.
+Clone ContagionRL repo, to use its functionalities.
 
 *Build* files to run **train_modified.py** (version with video rendering bug solved).
 
@@ -29,7 +29,7 @@ In *ContagionRL/figureTraining/* there are some examples of simulations you can 
 
 ```bash
 #Example
-python "local_behaviour_exp/train_figure_visibility_changes.py" --record-video
+python "train_figure_visibility_changes.py" --record-video
 ```
 
 You'll find a videos folder inside the new logs folder to see your current agent behaviour evolution.

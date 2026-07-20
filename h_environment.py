@@ -645,8 +645,9 @@ class RatMovementHandler:
     
     def _fear_random_move(self, x: float, y: float, humans: List, rng: np.random.Generator):
         """
-        Random
-        humans is a list of the humans in a 5 capacity of vision field
+        The random movement is conditioned by the fear of nearby humans—determined
+        by the rat's field of vision—and the boundaries of the grid. If no humans 
+        are present, the rat moves randomly and continuously
         """
         if len(humans) == 0:
             return self._continuous_random_move(x, y, None, rng)
@@ -801,11 +802,13 @@ class Rat:
         self.base_excretion_prob = excretion_prob # it is used to stablish a new probability of excretion when a rat eats cheese
         self.excretion_prob = excretion_prob
 
+    # determine what happens when a rat eats cheese
     def eat_cheese(self, digestion_time: int = 10):
         self.fed = True
         self.digest_steps = digestion_time
         self.excretion_prob = self.base_excretion_prob + 0.10
 
+    # change the state of the rat when it eats cheese
     def update(self):
         if self.digest_steps > 0:
             self.digest_steps -= 1

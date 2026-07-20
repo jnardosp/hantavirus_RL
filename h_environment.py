@@ -520,10 +520,10 @@ class RatMovementHandler:
         self.max_acceleration = 0.2
         self.max_velocity = 1.0
         self.velocities = {}  # {rat_id: [vx, vy]} for continuous_random
-        self.vision_radius = 3
+        self.vision_radius = 4 
         self.escape_probability = 0.95
 
-        valid_types = ["stationary", "discrete_random", "continuous_random", "wall_random"]
+        valid_types = ["stationary", "discrete_random", "continuous_random", "wall_random", "fear_random"]
         if rat_movement_type not in valid_types:
             raise ValueError(f"Rat movement type must be one of {valid_types}")
 
@@ -876,7 +876,7 @@ class SIRSDEnvironment(gym.Env):
         movement_type: str = "continuous_random",
         movement_scale: float = 1.0, 
         n_rats: int = 5,  # number of rats in the environment
-        n_cheeses: int = 5, # number of cheeses in the environment
+        n_cheeses: int = 8, # number of cheeses in the environment
         rat_movement_type: str = "fear_random",  # one of ["stationary", "discrete_random", "continuous_random", "wall_random", "fear_random"]
         rat_excretion_prob: float = 0.08,  # probability a rat leaves excreta on a given step
         excreta_lifespan: int = 15,  # number of steps before a pile of excreta disappears

@@ -2,6 +2,7 @@ import gymnasium as gym
 import numpy as np
 from typing import Optional, List, Tuple
 import math
+import warnings
 import matplotlib.pyplot as plt
 
 STATE_DICT = {
@@ -946,6 +947,8 @@ class SIRSDEnvironment(gym.Env):
         n_humans: int = 100,
         n_infected: int = 5,
         beta: float = 0.3,
+        rat_beta: float = 0.8,     # human-rat proximity infection rate (should be > beta)
+        excreta_beta: float = 1.2,  # human-excreta proximity infection rate (should be > rat_beta)
         initial_agent_adherence: float = 0.5,
         distance_decay: float = 0.2,
         lethality: float = 0.1,
@@ -986,6 +989,16 @@ class SIRSDEnvironment(gym.Env):
             raise ValueError("initial_agent_adherence must be in [0,1]")
         if beta < 0 or beta > 1:
             raise ValueError("beta must be in [0,1]")
+        if rat_beta < 0:
+            raise ValueError("rat_beta must be non-negative")
+        if excreta_beta < 0:
+            raise ValueError("excreta_beta must be non-negative")
+        if not (excreta_beta > rat_beta > beta):
+            warnings.warn(
+                f"Expected excreta_beta ({excreta_beta}) > rat_beta ({rat_beta}) > beta ({beta}) "
+                "to model excreta/rat contact as riskier than human-human contact, but the values "
+                "provided don't follow that ordering. Continuing anyway with the values as given."
+            )
         if lethality < 0 or lethality > 1:
             raise ValueError("lethality must be in [0,1]")
         if immunity_loss_prob < 0 or immunity_loss_prob > 1:
@@ -1036,7 +1049,9 @@ class SIRSDEnvironment(gym.Env):
         ##############################
         self.n_humans = n_humans
         self.n_infected = n_infected
-        self.beta = beta # infection rate
+        self.beta = beta # human-human infection rate
+        self.rat_beta = rat_beta # human-rat proximity infection rate
+        self.excreta_beta = excreta_beta # human-excreta proximity infection rate
         self.distance_decay = distance_decay # distance decay rate
         self.lethality = lethality # lethality rate
         self.immunity_loss_prob = immunity_loss_prob # probability of losing immunity
@@ -1113,6 +1128,20 @@ class SIRSDEnvironment(gym.Env):
 
     ####### TRANSITION FUNCTIONS FOR MOVING BETWEEN S, I, R AND DEAD #######
 
+    def _calculate_distance_xy(self, x1: float, y1: float, x2: float, y2: float) -> float:
+        """
+        Calculate the minimum distance between two (x, y) points on a periodic
+        (wrapping) grid. Generic helper used for humans, rats, and excreta alike.
+        """
+        dx = abs(x1 - x2)
+        dy = abs(y1 - y2)
+
+        # Consider wrapping around the grid
+        dx = min(dx, self.grid_size - dx)
+        dy = min(dy, self.grid_size - dy)
+
+        return math.sqrt(dx**2 + dy**2)
+
     def _calculate_distance(self, human1: Human, human2: Human) -> float:
         """
         Calculate the minimum distance between two humans in a periodic grid:
@@ -1120,15 +1149,7 @@ class SIRSDEnvironment(gym.Env):
             - Return the raw distance considering grid wrapping
             - Note: This returns the raw distance, normalization should be done by the caller if needed
         """
-        # Calculate direct differences
-        dx = abs(human1.x - human2.x)
-        dy = abs(human1.y - human2.y)
-        
-        # Consider wrapping around the grid
-        dx = min(dx, self.grid_size - dx)
-        dy = min(dy, self.grid_size - dy)
-        
-        return math.sqrt(dx**2 + dy**2) 
+        return self._calculate_distance_xy(human1.x, human1.y, human2.x, human2.y)
 
     def _get_neighbors_list(self, current_human: Human) -> List[Human]:
         """
@@ -1183,22 +1204,71 @@ class SIRSDEnvironment(gym.Env):
 
         return total_exposure
 
+    def _calculate_proximity_exposure(self, susceptible: Human, entities: list) -> float:
+        """
+        Generic exposure calculation for any list of grid entities that expose
+        (x, y) attributes (e.g. rats, excreta). Mirrors _calculate_total_exposure:
+        each nearby entity contributes exp(-distance_decay * distance), respecting
+        visibility_radius and max_distance_for_beta_calculation the same way
+        human-human exposure does.
+        """
+        total_exposure = 0
+        for entity in entities:
+            distance = self._calculate_distance_xy(susceptible.x, susceptible.y, entity.x, entity.y)
+
+            if self.visibility_radius != -1 and distance > self.visibility_radius:
+                continue
+
+            if self.max_distance_for_beta_calculation == -1 or distance <= self.max_distance_for_beta_calculation:
+                total_exposure += math.exp(-self.distance_decay * distance)
+
+        return total_exposure
+
+    def _calculate_rat_exposure(self, susceptible: Human) -> float:
+        """Return the total exposure of a human/agent to nearby rats."""
+        return self._calculate_proximity_exposure(susceptible, self.rats)
+
+    def _calculate_excreta_exposure(self, susceptible: Human) -> float:
+        """Return the total exposure of a human/agent to nearby excreta piles."""
+        return self._calculate_proximity_exposure(susceptible, self.excreta)
+
     def _calculate_infection_probability(self, susceptible: Human, is_agent: bool = False) -> float:
         """
-        Calculate probability of infection based on nearby infected individuals
-        If visibility_radius is -1, consider all infected individuals
-        """
-        total_exposure = self._calculate_total_exposure(susceptible)
+        Calculate probability of infection based on nearby infected individuals,
+        nearby rats, and nearby excreta. If visibility_radius is -1, consider all
+        infected individuals/rats/excreta on the grid; otherwise only those within
+        visibility_radius.
 
+        Each exposure source contributes its own hazard term (rate * exposure),
+        and the terms are summed inside a single exponential, so being close to
+        rats or excreta is on top of (not a replacement for) human-human exposure.
+        By default rat_beta > beta and excreta_beta > rat_beta, so proximity to
+        excreta is the highest-risk source, followed by rats, followed by other
+        infected humans.
+        """
+        human_exposure = self._calculate_total_exposure(susceptible)
+        rat_exposure = self._calculate_rat_exposure(susceptible)
+        excreta_exposure = self._calculate_excreta_exposure(susceptible)
 
         if is_agent:
-            # Effective beta is reduced but not eliminated by adherence
-            effective_beta = self.beta * (self.adherence_effectiveness + (1 - self.adherence_effectiveness) * (1 - self.agent_adherence))
+            # Effective beta is reduced but not eliminated by adherence.
+            # Adherence (e.g. hygiene, distancing) is treated as reducing all
+            # three exposure channels equally.
+            adherence_factor = self.adherence_effectiveness + (1 - self.adherence_effectiveness) * (1 - self.agent_adherence)
+            effective_beta = self.beta * adherence_factor
+            effective_rat_beta = self.rat_beta * adherence_factor
+            effective_excreta_beta = self.excreta_beta * adherence_factor
         else:
             effective_beta = self.beta
+            effective_rat_beta = self.rat_beta
+            effective_excreta_beta = self.excreta_beta
 
-        # Use a Poisson model for infection probability: P = 1 - exp(-effective_beta * total_exposure)
-        probability = 1 - math.exp(- effective_beta * total_exposure)
+        total_hazard = (effective_beta * human_exposure
+                         + effective_rat_beta * rat_exposure
+                         + effective_excreta_beta * excreta_exposure)
+
+        # Use a Poisson model for infection probability: P = 1 - exp(-total_hazard)
+        probability = 1 - math.exp(-total_hazard)
         return probability
 
     def _calculate_recovery_probabilities(self, human: Human) -> float:

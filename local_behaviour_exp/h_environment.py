@@ -1452,7 +1452,13 @@ class SIRSDEnvironment(gym.Env):
 
             # monitor when a rat eats cheese
             for cheese in self.cheeses[:]:
-                if rat.x == cheese.x and rat.y == cheese.y:
+                # calculate distance between chees and rat
+                distance = np.hypot(
+                rat.x - cheese.x,
+                rat.y - cheese.y
+                )
+                # check how far the rat is from the cheese and the remove the cheese
+                if distance < 0.2:   
                     rat.eat_cheese()
                     self.cheeses.remove(cheese)
             

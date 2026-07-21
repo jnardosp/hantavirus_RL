@@ -1,47 +1,52 @@
-# Optimización Adaptativa de Políticas de Intervención Contra el Virus J
-## Aprendizaje por Refuerzo Proximal (PPO) en Simulación Epidemiológica Vectorizada
+# *Experimento 2:* Optimización de Políticas de Intervención No Farmacéutica (NPI) contra el Andes Orthohantavirus (ANDV)
+## Reinforcement Learning ccon PPO
 
 ---
 
 ## 📋 Descripción del Proyecto
 
-Este proyecto implementa un **Modelo Basado en Agentes (ABM) vectorizado** que simula la propagación epidemiológica de un virus ficticio (Virus J) con características realistas de transmisión zoonótica e interhumana. 
+Este proyecto implementa un **Modelo Basado en Agentes (ABM) vectorizado** que simula la propagación epidemiológica del **Andes Orthohantavirus (ANDV)**, el principal agente causal del Síndrome Cardiopulmonar por Hantavirus (SCPH) en América del Sur y el único hantavirus con capacidad documentada de transmisión interhumana.
 
-La optimización de políticas de **intervención no farmacéutica** se realiza mediante **Proximal Policy Optimization (PPO)**, un algoritmo de aprendizaje por refuerzo que converge a políticas de control epidemiológico efectivas.
+La optimización de políticas de **intervención no farmacéutica** se realiza mediante **Proximal Policy Optimization (PPO)**, un algoritmo de aprendizaje por refuerzo que converge a políticas de control epidemiológico efectivas frente a brotes con alta letalidad y dinámicas mixtas (zoonóticas e interhumanas).
 
 ### Características Clave
 
 ✓ **Modelo Epidemiológico Sofisticado**
-  - Dinámicas SEIR: Susceptibles → Latentes → Sintomáticos → Recuperados/Fallecidos
-  - Transmisión zoonótica (focos rurales) e interhumana (contacto directo)
-  - Período de incubación estocástico: 9-33 días
-  - Retraso en detección de casos: 1-3 días
-  - Tasa de letalidad: 35% (histórica 25-40%)
+
+* Dinámicas SEIR: Susceptibles → Latentes → Sintomáticos → Recuperados/Fallecidos
+* Transmisión zoonótica (focos rurales / exposición al colilargo *Oligoryzomys longicaudatus*) e interhumana (contacto estrecho)
+* Período de incubación estocástico: 9-33 días (característico de ANDV)
+* Retraso en detección de casos: 1-3 días (confirmación RT-PCR / serología)
+* Tasa de letalidad: 35% (rango histórico documentado del SCPH: 25-40%)
 
 ✓ **Arquitectura Vectorizada con NumPy/SciPy**
-  - Sin bucles iterativos en Python (compilados en C)
-  - Cálculo de distancias matricial: O(N) con `scipy.spatial.distance.cdist`
-  - Tiempo por paso simulado: < 0.1 ms (N=100)
-  - Entrenamiento completo: 2-5 minutos en GPU RTX 3060
+
+* Sin bucles iterativos en Python (compilados en C)
+* Cálculo de distancias matricial: O(N) con `scipy.spatial.distance.cdist`
+* Tiempo por paso simulado: < 0.1 ms (N=100)
+* Entrenamiento completo: 2-5 minutos en GPU RTX 3060
 
 ✓ **Espacios Continuos de Acción**
-  - Mascarillas N95 (eficacia 60%)
-  - Confinamiento residencial
-  - Control de aforos en zonas públicas
-  - Desratización ambiental (con recuperación ecológica)
-  - Aislamiento de casos sintomáticos
+
+* Mascarillas N95 / Respiradores de alta eficiencia (eficacia 60% frente a aerosoles)
+* Confinamiento residencial y restricción de movilidad rural
+* Control de aforos en zonas públicas y centros comunitarios
+* Desratización y control de reservorios ambientales (con recuperación ecológica)
+* Aislamiento estricto de casos sintomáticos / sospechosos
 
 ✓ **Función de Recompensa Multiobjetivo**
-  - α=0.20: Impacto económico
-  - β=0.65: Salud pública (priorizado)
-  - γ=0.15: Sostenibilidad social
-  - Penalización de -10.0 por cada fallecimiento
+
+* α=0.20: Impacto económico
+* β=0.65: Salud pública (priorizado por alta letalidad del ANDV)
+* γ=0.15: Sostenibilidad social
+* Penalización de -10.0 por cada fallecimiento
 
 ✓ **Algoritmo PPO Robusto**
-  - Arquitectura Actor-Crítico independiente
-  - Clipping de gradiente: ε=0.2
-  - Ventaja Generalizada (GAE): λ=0.95, γ=0.99
-  - Bonificación de entropía para exploración
+
+* Arquitectura Actor-Crítico independiente
+* Clipping de gradiente: ε=0.2
+* Ventaja Generalizada (GAE): λ=0.95, γ=0.99
+* Bonificación de entropía para exploración
 
 ---
 
@@ -49,46 +54,52 @@ La optimización de políticas de **intervención no farmacéutica** se realiza 
 
 ```
 .
-├── epidemic_env.py          # Entorno Gymnasium vectorizado
+├── epidemic_env.py          # Entorno Gymnasium vectorizado para ANDV
 ├── ppo_trainer.py           # Algoritmo PPO + redes neuronales
 ├── main.py                  # Script principal (entrenamiento/inferencia)
 ├── analysis.py              # Análisis y visualización
 ├── requirements.txt         # Dependencias Python
-└── README.md               # Esta documentación
+└── README.md                # Esta documentación
+
 ```
 
 ### Archivos Principales
 
 #### 1. `epidemic_env.py` - Simulación Epidemiológica
 
-**Clase `EpidemicEnvironment(gym.Env)`**
+**Clase `EpidemicEnvironment(gym.Env)**`
 
 Implementa el entorno Gymnasium con:
 
-- **Geometría Espacial**: Plano continuo 2D [0,10] × [0,10]
-  - 100 agentes humanos distribuidos en ~33 casas
-  - 5 focos zoonóticos rurales
-  - 5 zonas seguras urbanas
+* **Geometría Espacial**: Plano continuo 2D [0,10] × [0,10]
+* 100 agentes humanos distribuidos en ~33 casas
+* 5 focos zoonóticos rurales (hábitat del ratón colilargo)
+* 5 zonas seguras urbanas
 
-- **Dinámicas de Transmisión**:
-  ```
-  P(Infección) = 1 - ∏(1 - λ_zoo) * ∏(1 - λ_hum)
-  
-  λ_zoo = β_zoo * hazard * (1 - 0.6*a_masks) * I(distancia < r_zoo)
-  λ_hum = β_hum * (1 - 0.6*a_masks) * I(distancia < r_hum)
-  ```
 
-- **Métodos Clave**:
-  - `step(action)`: Ejecuta un paso temporal (día)
-  - `_update_mobility()`: Movimiento pendular vectorizado
-  - `_calculate_infections()`: Cálculo de contagios
-  - `_update_health_transitions()`: Progresión epidemiológica
-  - `_get_observation()`: Estado agregado normalizado
-  - `_calculate_reward()`: Función multiobjetivo
+* **Dinámicas de Transmisión**:
+```
+P(Infección) = 1 - ∏(1 - λ_zoo) * ∏(1 - λ_hum)
+
+λ_zoo = β_zoo * hazard * (1 - 0.6*a_masks) * I(distancia < r_zoo)
+λ_hum = β_hum * (1 - 0.6*a_masks) * I(distancia < r_hum)
+
+```
+
+
+* **Métodos Clave**:
+* `step(action)`: Ejecuta un paso temporal (día)
+* `_update_mobility()`: Movimiento pendular vectorizado
+* `_calculate_infections()`: Cálculo de contagios zoonóticos e interhumanos
+* `_update_health_transitions()`: Progresión epidemiológica del ANDV
+* `_get_observation()`: Estado agregado normalizado
+* `_calculate_reward()`: Función multiobjetivo
+
+
 
 #### 2. `ppo_trainer.py` - Aprendizaje por Refuerzo
 
-**Clase `ActorCriticNetwork(nn.Module)`**
+**Clase `ActorCriticNetwork(nn.Module)**`
 
 Red neuronal con arquitectura separada:
 
@@ -98,47 +109,57 @@ Input [5] → Capas compartidas → [64] → [64]
                         ┌─────────┴────────┐
                         ↓                  ↓
                     Actor μ,σ          Critic V
-                   Sigmoid [5]         Linear [1]
+                   Sigmoid [5]        Linear [1]
+
 ```
 
-- **Actor**: Genera μ y σ de distribución Gaussiana diagonal
-- **Crítico**: Estima valor V(s_t) para GAE
+* **Actor**: Genera μ y σ de distribución Gaussiana diagonal
+* **Crítico**: Estima valor V(s_t) para GAE
 
-**Clase `PPOTrainer`**
+**Clase `PPOTrainer**`
 
 Implementación de PPO con:
 
-- **Colección de Experiencias**: Rollouts de 2048 pasos
-- **Cálculo de Advantages**: GAE con λ=0.95
-- **Actualización de Política**:
-  ```
-  L^CLIP(θ) = min(r_t * Â_t, clip(r_t, 1±ε) * Â_t)
-  L^VF(φ) = (V(s_t) - V_target)²
-  L_total = L^CLIP + 0.5*L^VF + 0.01*Entropy
-  ```
+* **Colección de Experiencias**: Rollouts de 2048 pasos
+* **Cálculo de Advantages**: GAE con λ=0.95
+* **Actualización de Política**:
+```
+L^CLIP(θ) = min(r_t * Â_t, clip(r_t, 1±ε) * Â_t)
+L^VF(φ) = (V(s_t) - V_target)²
+L_total = L^CLIP + 0.5*L^VF + 0.01*Entropy
+
+```
+
+
 
 #### 3. `main.py` - Interfaz Principal
 
 Proporciona dos modos:
 
 **Modo Entrenamiento**:
+
 ```bash
 python main.py --mode train --iterations 50
+
 ```
-- 50 iteraciones × 2048 pasos = 102,400 pasos de entorno
-- Guarda modelo en `/mnt/user-data/outputs/epidemic_policy.pt`
-- Tiempo estimado: 2-5 minutos (GPU RTX 3060)
+
+* 50 iteraciones × 2048 pasos = 102,400 pasos de entorno
+* Guarda modelo en `/mnt/user-data/outputs/epidemic_policy.pt`
+* Tiempo estimado: 2-5 minutos (GPU RTX 3060)
 
 **Modo Prueba**:
+
 ```bash
 python main.py --mode test --checkpoint model.pt --episodes_test 5
+
 ```
-- Evalúa política entrenada sin exploración
-- Muestra recompensas y dinámicas
+
+* Evalúa política entrenada sin exploración
+* Muestra recompensas y dinámicas de contención
 
 #### 4. `analysis.py` - Análisis de Resultados
 
-**Clase `EpidemicAnalyzer`**
+**Clase `EpidemicAnalyzer**`
 
 Genera análisis completos con visualizaciones:
 
@@ -149,10 +170,11 @@ analyzer = EpidemicAnalyzer(env, trainer)
 trajectories, actions = analyzer.simulate_with_policy(num_episodes=3)
 
 # Gráficos
-analyzer.plot_epidemic_curves(trajectories)      # Curvas SEIR
+analyzer.plot_epidemic_curves(trajectories)      # Curvas SEIR para ANDV
 analyzer.plot_control_policies(actions)          # Políticas de control
 analyzer.plot_training_progress(trainer)         # Progreso del entrenamiento
 analyzer.generate_report(trajectories, actions)  # Reporte estadístico
+
 ```
 
 ---
@@ -163,14 +185,16 @@ analyzer.generate_report(trajectories, actions)  # Reporte estadístico
 
 ```bash
 pip install -r requirements.txt
+
 ```
 
 Dependencias principales:
-- **NumPy** (1.24+): Operaciones vectorizadas
-- **SciPy** (1.11+): Cálculo de distancias
-- **Gymnasium** (0.29+): Interfaz RL
-- **PyTorch** (2.0+): Redes neuronales
-- **Matplotlib** (3.7+): Visualización
+
+* **NumPy** (1.24+): Operaciones vectorizadas
+* **SciPy** (1.11+): Cálculo de distancias
+* **Gymnasium** (0.29+): Interfaz RL
+* **PyTorch** (2.0+): Redes neuronales
+* **Matplotlib** (3.7+): Visualización
 
 ### Entrenamiento Básico
 
@@ -209,6 +233,7 @@ trainer.save_policy('epidemic_policy.pt')
 
 # Probar
 rewards, data = trainer.test_policy(num_episodes=5)
+
 ```
 
 ### Análisis y Visualización
@@ -226,82 +251,49 @@ analyzer.plot_epidemic_curves(trajectories, save_path='curves.png')
 analyzer.plot_control_policies(actions, save_path='policies.png')
 analyzer.plot_training_progress(trainer, save_path='progress.png')
 analyzer.generate_report(trajectories, actions, save_dir='./results')
-```
 
-### Uso desde Línea de Comandos
-
-```bash
-# Entrenar modelo
-python main.py --mode train --iterations 100 --save_path model.pt
-
-# Probar modelo entrenado
-python main.py --mode test --checkpoint model.pt --episodes_test 10
-
-# Análisis completo
-python analysis.py --model_path model.pt --episodes 5 --output_dir results/
 ```
 
 ---
 
-## 📊 Parámetros Epidemiológicos
+## 📊 Parámetros Epidemiológicos (Basados en ANDV)
 
-Todos los valores están basados en el informe académico:
+Todos los valores reflejan la literatura clínica y epidemiológica documentada para el Andes Orthohantavirus:
 
-| Parámetro | Valor | Justificación |
-|-----------|-------|---------------|
-| **Tamaño poblacional (N)** | 100 | Suficiente para dinámicas estocásticas |
-| **Duración simulación (T)** | 60 días | Múltiples ciclos de incubación |
-| **Período latencia** | 9-33 días | Mediana 18-22 días |
-| **Período infeccioso** | 5-10 días | Duración sintomática |
-| **Retraso detección** | 1-3 días | Demora de laboratorio |
-| **CFR (tasa letalidad)** | 35% | Histórica 25-40% |
-| **β_zoonótico** | 65% | Probabilidad contagio ambiental |
-| **β_interhumano** | 5% | Probabilidad contagio directo |
-| **Eficacia mascarilla** | 60% | Reducción probabilidad |
-| **Radio zoonótico** | 0.15 | Distancia exposición |
-| **Radio humano** | 0.12 | Distancia contacto respiratorio |
+| Parámetro | Valor | Justificación Clínica / Epidemiológica |
+| --- | --- | --- |
+| **Tamaño poblacional (N)** | 100 | Micropoblación rural/periurbana expuesta |
+| **Duración simulación (T)** | 60 días | Permite capturar múltiples ciclos de incubación |
+| **Período de latencia** | 9-33 días | Período de incubación prolongado del ANDV (mediana 18-22 días) |
+| **Período infeccioso** | 5-10 días | Fase cardiopulmonar agudizada y eliminación viral |
+| **Retraso detección** | 1-3 días | Demora de laboratorio para confirmación ELISA/RT-PCR |
+| **CFR (tasa letalidad)** | 35% | Consistente con la letalidad histórica del SCPH por ANDV (25-40%) |
+| **β_zoonótico** | 65% | Exposición a aerosoles de deyecciones de *O. longicaudatus* |
+| **β_interhumano** | 5% | Probabilidad por contacto estrecho o intrafamiliar |
+| **Eficacia mascarilla** | 60% | Protección con respiradores N95 frente a aerosoles |
+| **Radio zoonótico** | 0.15 | Distancia de riesgo en focos de roedores/galpones |
+| **Radio humano** | 0.12 | Proximidad física en espacio cerrado |
 
 ---
 
 ## 🎯 Dinámicas Aprendidas
 
-El algoritmo PPO converge a políticas con características interesantes:
+El algoritmo PPO converge a políticas optimizadas para mitigar brotes de ANDV:
 
-### 1. **Mitigación Preventiva**
-- Intervenciones **tempranas** antes del pico sintomático
-- Aprovecha el retraso de 18-22 días de incubación
-- Evita la trampa temporal (histéresis epidemiológica)
+### 1. **Mitigación Preventiva y Anticipación**
+
+* Intervenciones **tempranas** en la fase subclínica para compensar el largo período de incubación (18-22 días).
+* Evita la trampa de la "histéresis epidemiológica", donde las medidas tardías no evitan el colapso debido a contagios silenciosos ya producidos.
 
 ### 2. **Focalización de Recursos**
-- Control de aforos en zonas públicas (no confinamiento total)
-- Aislamiento selectivo de casos confirmados
-- Desratización periódica (no única)
+
+* Intervención estricta en focos rurales/zoonóticos combinada con desratización periódica.
+* Restricción focalizada de movilidad y aislamiento temprano de contactos estrechos intrafamiliares para cortar la transmisión interhumana.
 
 ### 3. **Equilibrio Multiobjetivo**
-- Tolera pequeños brotes controlados
-- Evita economía de colapso completo
-- Protege de picos de mortalidad extremos
 
-### Curvas Típicas
-
-**Sin intervención**:
-```
-Casos sintomáticos
-  ▲
-  │       /───\
-  │      /     \    ← Explosión de contagios (R₀ ≈ 2.12)
-  │     /       \
-  └─────┴────────┴────────────► Tiempo
-```
-
-**Con política PPO**:
-```
-Casos sintomáticos
-  ▲
-  │  _/\_      ← Contención temprana, mantención bajo control
-  │ /    \
-  └──┴────┴───────────────► Tiempo
-```
+* Priorización severa de la salud pública debido a la penalización por alta letalidad (CFR 35%).
+* Minimización del impacto socioeconómico al evitar confinamientos totales prolongados una vez contenido el foco.
 
 ---
 
@@ -309,10 +301,10 @@ Casos sintomáticos
 
 Métricas típicas después de 50 iteraciones de entrenamiento:
 
-| Métrica | Valor |
-|---------|-------|
+| Métrica | Valor Esperado |
+| --- | --- |
 | Recompensa promedio (test) | +2.5 a +3.5 |
-| Fallecidos al final | 2-8 (2-8% mortalidad) |
+| Fallecidos al final | 2-8 (acotado frente al 35% letal base) |
 | Casos sintomáticos pico | 15-25 agentes |
 | Duración total brote | 30-45 días |
 | Tasa de ataque | 60-80% |
@@ -324,28 +316,32 @@ Métricas típicas después de 50 iteraciones de entrenamiento:
 ## 🔧 Hiperparámetros Ajustables
 
 ### Parámetros del Entorno
+
 ```python
 EpidemicEnvironment(
-    population_size=100,        # Aumentar para más varianza
+    population_size=100,        # Tamaño de la población bajo riesgo
     simulation_days=60,         # Horizonte temporal
-    num_houses=33,
-    num_zoonotic_foci=5,        # Riesgo ambiental
+    num_houses=33,              # Estructura comunitaria
+    num_zoonotic_foci=5,        # Focos silvestres de roedores
     num_safe_zones=5
 )
+
 ```
 
 ### Parámetros PPO
+
 ```python
 PPOTrainer(
-    learning_rate=3e-4,         # α (menor = más estable)
-    gamma=0.99,                 # γ (descuento)
-    lambda_gae=0.95,            # λ (GAE)
-    clip_ratio=0.2,             # ε (región confianza)
-    value_coeff=0.5,            # c₁ (peso pérdida valor)
-    entropy_coeff=0.01,         # c₂ (bonificación entropía)
-    batch_size=64,              # Tamaño lote
-    epochs_per_update=10        # Épocas PPO
+    learning_rate=3e-4,         # Tasa de aprendizaje (α)
+    gamma=0.99,                 # Factor de descuento
+    lambda_gae=0.95,            # Parámetro GAE (λ)
+    clip_ratio=0.2,             # Rango de clipping (ε)
+    value_coeff=0.5,            # Coeficiente de pérdida de valor
+    entropy_coeff=0.01,         # Coeficiente de entropía para exploración
+    batch_size=64,              # Tamaño de mini-lote
+    epochs_per_update=10        # Épocas de optimización por ciclo
 )
+
 ```
 
 ---
@@ -358,42 +354,20 @@ El entrenamiento genera:
 /mnt/user-data/outputs/
 ├── epidemic_policy.pt              # Pesos de la red entrenada
 ├── epidemic_policy_results.npy     # Datos de prueba (rewards, trayectorias)
-├── epidemic_curves.png             # Gráfico de curvas SEIR
-├── control_policies.png            # Gráfico de políticas
-├── training_progress.png           # Evolución del entrenamiento
-└── epidemic_analysis_report.txt    # Reporte estadístico
+├── epidemic_curves.png             # Curvas SEIR para Andes Orthohantavirus
+├── control_policies.png            # Visualización de las políticas aplicadas
+├── training_progress.png           # Evolución de las métricas de PPO
+└── epidemic_analysis_report.txt    # Reporte estadístico detallado
+
 ```
-
----
-
-## ⚠️ Consideraciones Académicas
-
-### Validez del Modelo
-- ✓ Basado en epidemiología matemática SEIR
-- ✓ Parámetros de literatura científica
-- ✓ Asimetría de información realista
-- ✓ Fines **estrictamente educativos**
-
-### Limitaciones
-- ⚠️ Población pequeña (N=100) → alta varianza
-- ⚠️ Geometría simplificada (plano 2D)
-- ⚠️ No modela comportamiento humano adaptativo
-- ⚠️ Virus ficticio, no reales
-
-### Mejoras Futuras
-- Vectorización adicional de bucles internos
-- Entornos paralelos (VectorEnv) para reducir varianza
-- Escalabilidad a N > 10,000
-- Transferencia de política a otros virus/enfermedades
-
 ---
 
 ## 🎓 Referencias Científicas
 
-1. **Modelos Epidemiológicos**: Kermack-McKendrick SEIR
-2. **Aprendizaje por Refuerzo**: Schulman et al. (2017), PPO
-3. **Simulación Basada en Agentes**: Vectorización NumPy/SciPy
-4. **Salud Pública**: Política epidemiológica multiobjetivo
+1. **Andes Orthohantavirus**: Padula et al. *Transmission of Hantavirus Pulmonary Syndrome in Argentina*. N Engl J Med.
+2. **Modelos Epidemiológicos**: Kermack-McKendrick SEIR para patógenos zoonóticos.
+3. **Aprendizaje por Refuerzo**: Schulman et al. (2017), *Proximal Policy Optimization Algorithms*.
+4. **Simulación Basada en Agentes**: Métodos de computación matricial vectorizada NumPy/SciPy.
 
 ---
 
@@ -401,37 +375,7 @@ El entrenamiento genera:
 
 Este proyecto es de **uso estrictamente académico y educativo**.
 
-- ✓ Uso permitido en cursos de ML, RL, epidemiología
-- ✓ Modificación para fines educativos
-- ✗ Uso comercial
-- ✗ Extrapolación a patógenos reales
-
----
-
-## 👨‍💻 Soporte Técnico
-
-Para problemas comunes:
-
-### CUDA no disponible
-```python
-trainer = PPOTrainer(env=env, device='cpu')
-# Más lento, pero funcional
-```
-
-### Memoria insuficiente
-```python
-# Reducir tamaño de lote
-trainer = PPOTrainer(env=env, batch_size=32)
-```
-
-### Inestabilidad de entrenamiento
-```python
-# Reducir tasa de aprendizaje
-trainer = PPOTrainer(env=env, learning_rate=1e-4)
-```
-
----
-
-**Última actualización**: 2026
-**Versión**: 1.0 (Versión académica)
-**Estado**: ✓ Funcional y testeado
+* ✓ Uso permitido en cursos de Machine Learning, Aprendizaje por Refuerzo y Epidemiología Computacional.
+* ✓ Modificación libre para investigación académica.
+* ✗ Uso comercial no autorizado.
+* ✗ No constituye una herramienta de diagnóstico médico ni sustituye las directrices de los organismos oficiales de salud pública.

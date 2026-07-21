@@ -1381,7 +1381,7 @@ class SIRSDEnvironment(gym.Env):
         scaled_dy = dy * self.max_movement
         
         new_position = self.agent_position + np.array([scaled_dx, scaled_dy])
-        new_position_x, new_position_y = self._bounded_position(self, new_position[0], new_position[1])
+        new_position_x, new_position_y = self._bounded_position(new_position[0], new_position[1])
         self.agent_position = np.array([
             new_position_x,  # wrap x-coordinate
             new_position_y   # wrap y-coordinate

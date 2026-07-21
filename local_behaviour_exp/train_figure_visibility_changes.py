@@ -19,7 +19,7 @@ except ImportError as e:
     sys.exit(1)
 
 SEEDS_FOR_TRAINING = [1] # Use more than 1 to explore different random behaviour
-VISIBILITY_RADIUS_VALUES = [-1, 10, 15, 20]  # Full visibility vs various limited visibility settings
+VISIBILITY_RADIUS_VALUES = [-1, 5, 10, 15]  # Full visibility vs various limited visibility settings
 REWARD_TYPE_FOR_FIG9 = "potential_field"
 
 def main_fig9_trainer(args):

@@ -1458,7 +1458,7 @@ class SIRSDEnvironment(gym.Env):
                 rat.y - cheese.y
                 )
                 # check how far the rat is from the cheese and the remove the cheese
-                if distance < 0.2:   
+                if distance < 0.8:   
                     rat.eat_cheese()
                     self.cheeses.remove(cheese)
             

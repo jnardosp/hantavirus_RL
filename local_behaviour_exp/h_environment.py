@@ -707,15 +707,21 @@ class RatMovementHandler:
         dx = cx - x
         dy = cy - y
 
-        # Now check if the rat is already on top of the cheese
-        if dx == 0 and dy == 0:
-            return self._discrete_random_move(x, y, rng)
-        
-        step_x = int(np.sign(dx))
-        step_y = int(np.sign(dy))
+        distance = np.hypot(dx, dy)
 
-        new_x = (x + step_x)
-        new_y = (y + step_y)
+        # Now check if the rat is already on top of the cheese
+        if distance < 1e-3:
+            return self._discrete_random_move(x, y, rng)
+
+        # Calculate the step to get the cheese
+        step_size = min(1.0, distance)
+
+        # Calculate the unit direction 
+        dir_x = dx / distance
+        dir_y = dy / distance
+
+        new_x = x + step_size * dir_x
+        new_y = y + step_size * dir_y
 
         return self._bounded_position(new_x, new_y)
         

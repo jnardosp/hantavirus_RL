@@ -204,11 +204,11 @@ from ppo_trainer import PPOTrainer
 
 # Crear entorno
 env = EpidemicEnvironment(
-    population_size=100,
-    simulation_days=60,
-    num_houses=33,
-    num_zoonotic_foci=5,
-    num_safe_zones=5
+    population_size=500,
+    simulation_days=150,
+    num_houses=165,
+    num_zoonotic_foci=25,
+    num_safe_zones=25
 )
 
 # Crear entrenador
@@ -262,8 +262,8 @@ Todos los valores reflejan la literatura clínica y epidemiológica documentada 
 
 | Parámetro | Valor | Justificación Clínica / Epidemiológica |
 | --- | --- | --- |
-| **Tamaño poblacional (N)** | 100 | Micropoblación rural/periurbana expuesta |
-| **Duración simulación (T)** | 60 días | Permite capturar múltiples ciclos de incubación |
+| **Tamaño poblacional (N)** | 500 | Micropoblación rural/periurbana expuesta |
+| **Duración simulación (T)** | 150 días | Permite capturar múltiples ciclos de incubación |
 | **Período de latencia** | 9-33 días | Período de incubación prolongado del ANDV (mediana 18-22 días) |
 | **Período infeccioso** | 5-10 días | Fase cardiopulmonar agudizada y eliminación viral |
 | **Retraso detección** | 1-3 días | Demora de laboratorio para confirmación ELISA/RT-PCR |
@@ -297,33 +297,17 @@ El algoritmo PPO converge a políticas optimizadas para mitigar brotes de ANDV:
 
 ---
 
-## 📈 Resultados Esperados
-
-Métricas típicas después de 50 iteraciones de entrenamiento:
-
-| Métrica | Valor Esperado |
-| --- | --- |
-| Recompensa promedio (test) | +2.5 a +3.5 |
-| Fallecidos al final | 2-8 (acotado frente al 35% letal base) |
-| Casos sintomáticos pico | 15-25 agentes |
-| Duración total brote | 30-45 días |
-| Tasa de ataque | 60-80% |
-| Pérdida del Actor | < 0.01 |
-| Pérdida del Crítico | < 0.001 |
-
----
-
 ## 🔧 Hiperparámetros Ajustables
 
 ### Parámetros del Entorno
 
 ```python
 EpidemicEnvironment(
-    population_size=100,        # Tamaño de la población bajo riesgo
-    simulation_days=60,         # Horizonte temporal
-    num_houses=33,              # Estructura comunitaria
-    num_zoonotic_foci=5,        # Focos silvestres de roedores
-    num_safe_zones=5
+    population_size=500,         # Tamaño de la población
+    simulation_days=150,         # Horizonte temporal del experimento
+    num_houses=165,              # Cantidad total de casas
+    num_zoonotic_foci=25,        # Puntos de interés con probabilidad de contagio zoonótica 
+    num_safe_zones=25            # Puntos de interés SIN probabilidad de contagio zoonótica 
 )
 
 ```

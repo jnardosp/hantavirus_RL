@@ -1128,6 +1128,13 @@ class SIRSDEnvironment(gym.Env):
 
     ####### TRANSITION FUNCTIONS FOR MOVING BETWEEN S, I, R AND DEAD #######
 
+    def _bounded_position(self, new_x: float, new_y: float):
+        # establish the position according to the bounds of the grid
+        return (
+            np.clip(new_x, 0, self.grid_size - 1),
+            np.clip(new_y, 0, self.grid_size - 1)
+        )
+
     def _calculate_distance_xy(self, x1: float, y1: float, x2: float, y2: float) -> float:
         """
         Calculate the minimum distance between two (x, y) points on a periodic
@@ -1374,9 +1381,10 @@ class SIRSDEnvironment(gym.Env):
         scaled_dy = dy * self.max_movement
         
         new_position = self.agent_position + np.array([scaled_dx, scaled_dy])
+        new_position_x, new_position_y = self._bounded_position(self, new_position[0], new_position[1])
         self.agent_position = np.array([
-            new_position[0] % self.grid_size,  # wrap x-coordinate
-            new_position[1] % self.grid_size   # wrap y-coordinate
+            new_position_x,  # wrap x-coordinate
+            new_position_y   # wrap y-coordinate
         ])
         
         # Update NPI level (clipped to [0,1] range)

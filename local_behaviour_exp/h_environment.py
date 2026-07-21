@@ -44,6 +44,13 @@ class MovementHandler:
         self.movement_states = {}  # {human_id: 'at_home', 'going_to_work', 'at_work', 'going_home'}
         self.movement_patterns = {}  # {human_id: 'workplace_cycle' or 'random'}
 
+    def _bounded_position(self, new_x: float, new_y: float):
+        # establish the position according to the bounds of the grid
+        return (
+            np.clip(new_x, 0, self.grid_size - 1),
+            np.clip(new_y, 0, self.grid_size - 1)
+        )
+
     def initialize_positions(self, n_humans: int, rng: np.random.Generator, n_infected: int = 0, safe_distance: float = 0, init_agent_distance: float = 0) -> list:
         """
         Initialize positions for all humans based on movement type
@@ -288,8 +295,11 @@ class MovementHandler:
         self.velocities[human_id] = [vx, vy]
         
         # Update position
-        new_x = (x + vx) % self.grid_size
-        new_y = (y + vy) % self.grid_size
+        new_x = (x + vx)
+        new_y = (y + vy)
+
+        # Verify the bounds
+        new_x, new_y = self._bounded_position(new_x, new_y)
         
         return round(new_x, self.rounding_digits), round(new_y, self.rounding_digits)
 
@@ -335,10 +345,10 @@ class MovementHandler:
         dy = rng.integers(-1, 2)
         
         # Ensure we stay within bounds
-        new_x = (x + dx) % self.grid_size
-        new_y = (y + dy) % self.grid_size
+        new_x = (x + dx)
+        new_y = (y + dy)
         
-        return new_x, new_y
+        return self._bounded_position(new_x, new_y)
 
     def _circular_formation_move(self, x: int, y: int, rng: np.random.Generator) -> Tuple[int, int]:
         """
@@ -505,8 +515,9 @@ class MovementHandler:
             new_y = y + move_y
             
             # Handle periodic boundaries
-            new_x = new_x % self.grid_size
-            new_y = new_y % self.grid_size
+            new_x = new_x
+            new_y = new_y
+            new_x, new_y = self._bounded_position(new_x, new_y)
             
             return round(new_x, self.rounding_digits), round(new_y, self.rounding_digits)
         
@@ -548,6 +559,13 @@ class RatMovementHandler:
         self._perimeter_cycle = self._build_perimeter_cycle()
         # {rat_id: index into self._perimeter_cycle}
         self.perimeter_indices = {}
+
+    def _bounded_position(self, new_x: float, new_y: float):
+        # establish the position according to the bounds of the grid
+        return (
+            np.clip(new_x, 0, self.grid_size - 1),
+            np.clip(new_y, 0, self.grid_size - 1)
+        )
 
     def _build_perimeter_cycle(self) -> List[Tuple[int, int]]:
         """
@@ -614,9 +632,9 @@ class RatMovementHandler:
         """Random movement in discrete steps (-1, 0, 1) for both x and y, anywhere on the grid."""
         dx = rng.integers(-1, 2)
         dy = rng.integers(-1, 2)
-        new_x = (x + dx) % self.grid_size
-        new_y = (y + dy) % self.grid_size
-        return new_x, new_y
+        new_x = (x + dx)
+        new_y = (y + dy)
+        return self._bounded_position(new_x, new_y)
 
     def _continuous_random_move(self, x: float, y: float, rat_id: int, rng: np.random.Generator) -> Tuple[float, float]:
         """Smooth, momentum-based random movement anywhere on the grid."""
@@ -656,8 +674,10 @@ class RatMovementHandler:
 
         self.velocities[rat_id] = [vx, vy]
 
-        new_x = (x + vx) % self.grid_size
-        new_y = (y + vy) % self.grid_size
+        new_x = (x + vx)
+        new_y = (y + vy)
+        new_x, new_y = self._bounded_position(new_x, new_y)
+
         return round(new_x, self.rounding_digits), round(new_y, self.rounding_digits)
 
     def _wall_random_move(self, rat_id: int, rng: np.random.Generator) -> Tuple[int, int]:
@@ -693,10 +713,10 @@ class RatMovementHandler:
         step_x = int(np.sign(dx))
         step_y = int(np.sign(dy))
 
-        new_x = (x + step_x) % self.grid_size
-        new_y = (y + step_y) % self.grid_size
+        new_x = (x + step_x)
+        new_y = (y + step_y)
 
-        return new_x, new_y
+        return self._bounded_position(new_x, new_y)
         
     def _fear_random_move(self, x: float, y: float, humans: List, cheeses: List, rng: np.random.Generator) -> Tuple[float, float]:
         """
@@ -720,10 +740,10 @@ class RatMovementHandler:
         step_x = -int(np.sign(dx))
         step_y = -int(np.sign(dy))
 
-        new_x = (x + step_x) % self.grid_size
-        new_y = (y + step_y) % self.grid_size
+        new_x = (x + step_x)
+        new_y = (y + step_y)
 
-        return new_x, new_y
+        return self._bounded_position(new_x, new_y)
 
 ######## Human class ########
 class Human:

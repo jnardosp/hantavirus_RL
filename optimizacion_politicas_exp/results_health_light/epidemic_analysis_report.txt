@@ -1,0 +1,33 @@
+================================================================================
+REPORTE DE ANÁLISIS EPIDEMIOLÓGICO - SIMULACIÓN DEL VIRUS J
+================================================================================
+
+ESTADÍSTICAS AGREGADAS DE LA SIMULACIÓN
+
+Número de episodios simulados: 5
+Duración de cada simulación: 60 días
+Tamaño poblacional: 100 agentes
+
+ESTADO FINAL (Promedio):
+  - Susceptibles: 444.60 (±6.89)
+  - Latentes: 4.40 (±2.58)
+  - Sintomáticos: 1.00 (±0.63)
+  - Fallecidos: 18.60 (±2.73)
+  - Recuperados: 31.40 (±3.77)
+
+PICOS EPIDEMIOLÓGICOS:
+  - Máximo de casos sintomáticos: 9.20 (±0.98)
+  - Tasa de ataque (% infectados): 11.08%
+  - Tasa de letalidad bruta: 18.60%
+
+POLÍTICAS DE INTERVENCIÓN PROMEDIO:
+
+  - Intensidad promedio mascarillas: 0.920 (0=nula, 1=máxima)
+  - Intensidad promedio confinamiento: 0.001
+  - Intensidad promedio control aforos: 0.074
+  - Intensidad promedio desratización: 0.856
+  - Intensidad promedio aislamiento: 0.014
+
+================================================================================
+FIN DEL REPORTE
+================================================================================

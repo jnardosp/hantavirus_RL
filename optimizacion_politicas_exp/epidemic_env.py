@@ -31,7 +31,8 @@ class EpidemicEnvironment(gym.Env):
                  num_houses: int = 165,  # ~3 people per house
                  num_zoonotic_foci: int = 25,
                  num_safe_zones: int = 25,
-                 initial_infected: int = 20):
+                 initial_infected: int = 20,
+                 initial_infected_range: Tuple[int, int] = None):
         """
         Inicialización del entorno epidemiológico.
         
@@ -42,8 +43,13 @@ class EpidemicEnvironment(gym.Env):
             num_zoonotic_foci: Focos de riesgo zoonótico rural
             num_safe_zones: Zonas seguras urbanas
             initial_infected: Número de agentes infectados (estado LATENTE)
-                al inicio de cada episodio, es decir, el tamaño del brote
-                inicial (por defecto 1, el "paciente cero" clásico)
+                al inicio de cada episodio cuando initial_infected_range es None
+                (comportamiento fijo, retrocompatible).
+            initial_infected_range: Tupla (min, max). Si se especifica, cada
+                llamada a reset() sortea un tamaño de brote distinto en ese
+                rango (inclusive), para forzar que la política aprenda un
+                comportamiento realmente condicionado a la severidad del
+                brote en vez de una única acción global casi constante.
         """
         super().__init__()
         
@@ -55,14 +61,25 @@ class EpidemicEnvironment(gym.Env):
         self.num_safe_zones = num_safe_zones
 
         # Tamaño del brote inicial (número de casos importados al día 0)
-        if initial_infected < 1:
-            raise ValueError("initial_infected debe ser al menos 1")
-        if initial_infected > population_size:
-            raise ValueError(
-                "initial_infected no puede superar population_size "
-                f"({initial_infected} > {population_size})"
-            )
-        self.initial_infected = initial_infected
+        if initial_infected_range is not None:
+            lo, hi = initial_infected_range
+            if lo < 1 or hi > population_size or lo > hi:
+                raise ValueError(
+                    "initial_infected_range inválido: "
+                    f"({lo}, {hi}) con population_size={population_size}"
+                )
+            self.initial_infected_range = (lo, hi)
+            self.initial_infected = hi  # valor por defecto antes del primer reset()
+        else:
+            if initial_infected < 1:
+                raise ValueError("initial_infected debe ser al menos 1")
+            if initial_infected > population_size:
+                raise ValueError(
+                    "initial_infected no puede superar population_size "
+                    f"({initial_infected} > {population_size})"
+                )
+            self.initial_infected_range = None
+            self.initial_infected = initial_infected
         
         # Espacios de observación y acción
         self.observation_space = spaces.Box(
@@ -102,6 +119,7 @@ class EpidemicEnvironment(gym.Env):
         # Contadores de tiempo
         self.current_step = 0
         self.episode_data = {}
+        self._deceased_prev_count = 0
         
     def _initialize_spatial_geometry(self) -> None:
         """
@@ -202,6 +220,11 @@ class EpidemicEnvironment(gym.Env):
         # 4. TRANSICIONES EPIDEMIOLÓGICAS: Progresión de estados de salud
         self._update_health_transitions()
         
+        # 4b. Nuevos fallecidos EN ESTE PASO (señal directa, no diluida por N)
+        current_deceased_count = np.sum(self.health_states == self.DECEASED)
+        new_deaths = int(current_deceased_count - self._deceased_prev_count)
+        self._deceased_prev_count = current_deceased_count
+        
         # 5. DETECCIÓN: Actualizar estado observado con retraso
         self._update_detection()
         
@@ -213,7 +236,8 @@ class EpidemicEnvironment(gym.Env):
         
         # 8. RECOMPENSA: Función multiobjetivo
         reward = self._calculate_reward(
-            a_masks, a_confinement, a_capacity, a_deratization, a_isolation
+            a_masks, a_confinement, a_capacity, a_deratization, a_isolation,
+            new_deaths
         )
         
         # 9. TERMINACIÓN
@@ -333,7 +357,7 @@ class EpidemicEnvironment(gym.Env):
         pero hay recuperación ecológica después.
         """
         # Desratización reduce el peligro ambiental
-        self.zoonotic_hazard_probs = self.zoonotic_hazard_probs * (1 - 0.5 * a_deratization)
+        self.zoonotic_hazard_probs = self.zoonotic_hazard_probs * (1 - 0.8 * a_deratization)
         
         # Recuperación ecológica natural
         self.zoonotic_hazard_probs = np.minimum(
@@ -434,34 +458,39 @@ class EpidemicEnvironment(gym.Env):
         return obs
     
     def _calculate_reward(self, a_masks: float, a_confinement: float, a_capacity: float,
-                           a_deratization: float, a_isolation: float) -> float:
+                           a_deratization: float, a_isolation: float,
+                           new_deaths: int = 0) -> float:
         """
         Función de recompensa multiobjetivo con ponderaciones específicas:
         α=0.20 (economía), β=0.65 (salud), γ=0.15 (sostenibilidad social)
 
-        Todas las intervenciones tienen ahora un costo asociado en al menos
-        un eje, para evitar que el agente trate alguna acción como "gratis":
-
-          - Confinamiento:  costo económico alto + costo social (ya existía)
-          - Control aforos: costo social (ya existía)
-          - Desratización:  costo económico bajo  + costo de salud bajo
-          - Mascarillas:    costo económico bajo  + costo social moderado
-          - Aislamiento:    costo económico moderado + costo social alto
+        Cambios respecto a la versión anterior:
+          - (A) Costos CUADRÁTICOS para mascarillas/desratización/aislamiento:
+            el costo marginal crece con la intensidad de uso, evitando que
+            el óptimo sea siempre una solución de esquina (0 o 1) y
+            produciendo curvas más graduales, verosímiles.
+          - (C) Señal sanitaria reescalada: además del promedio poblacional
+            (que se diluye mucho con N=500), se penaliza directamente cada
+            fallecimiento NUEVO ocurrido en este paso. Esto evita que el
+            impacto de un brote severo quede "invisible" en el promedio.
         """
-        alpha, beta, gamma = 0.20, 0.65, 0.15
+        alpha, beta, gamma = 0.85, 0.0, 0.15
 
         # --- Pesos de costo por intervención (ajustables) ---
-        # Económicos (restan de R_c)
-        C_ECON_DERATIZATION = 0.05   # bajo
-        C_ECON_MASKS = 0.05          # bajo
-        C_ECON_ISOLATION = 0.20      # moderado
+        # Económicos (restan de R_c), ahora cuadráticos: C * a^2
+        C_ECON_DERATIZATION = 0.08   # bajo
+        C_ECON_MASKS = 0.08          # bajo
+        C_ECON_ISOLATION = 0.30      # moderado
 
-        # Salud (resta de R_h)
-        C_HEALTH_DERATIZATION = 0.05  # bajo (ej. exposición a raticidas/químicos)
+        # Salud (resta de R_h), cuadrático
+        C_HEALTH_DERATIZATION = 0.08  # bajo (ej. exposición a raticidas/químicos)
 
-        # Sociales (restan de R_p, junto con confinamiento/aforos ya existentes)
-        C_SOCIAL_MASKS = 0.15        # moderado
-        C_SOCIAL_ISOLATION = 0.40    # grande
+        # Sociales (restan de R_p), cuadrático
+        C_SOCIAL_MASKS = 0.25        # moderado
+        C_SOCIAL_ISOLATION = 0.55    # grande
+
+        # (C) Peso del flujo de nuevos fallecidos: señal directa, no diluida
+        W_DEATH_FLOW = 0.30
 
         # R_c^t: Recompensa económica
         healthy_and_latent = (
@@ -469,9 +498,9 @@ class EpidemicEnvironment(gym.Env):
             np.sum(self.health_states == self.LATENT)
         ) / self.N
         econ_cost = (
-            C_ECON_DERATIZATION * a_deratization +
-            C_ECON_MASKS * a_masks +
-            C_ECON_ISOLATION * a_isolation
+            C_ECON_DERATIZATION * a_deratization ** 2 +
+            C_ECON_MASKS * a_masks ** 2 +
+            C_ECON_ISOLATION * a_isolation ** 2
         )
         R_c = healthy_and_latent * (1 - a_confinement) - econ_cost
 
@@ -482,10 +511,14 @@ class EpidemicEnvironment(gym.Env):
         health_weights[self.health_states == self.SYMPTOMATIC] = 0.0
         health_weights[self.health_states == self.DECEASED] = -10.0
         health_weights[self.health_states == self.RECOVERED] = 1.0
-        R_h = np.mean(health_weights) - C_HEALTH_DERATIZATION * a_deratization
+        R_h = (
+            np.mean(health_weights)
+            - C_HEALTH_DERATIZATION * a_deratization ** 2
+            - W_DEATH_FLOW * new_deaths
+        )
 
         # R_p^t: Penalización por fatiga pandémica / costo social
-        social_cost = C_SOCIAL_MASKS * a_masks + C_SOCIAL_ISOLATION * a_isolation
+        social_cost = C_SOCIAL_MASKS * a_masks ** 2 + C_SOCIAL_ISOLATION * a_isolation ** 2
         R_p = 1.0 - (a_confinement + a_capacity) / 2 - social_cost
 
         # Recompensa agregada
@@ -496,15 +529,26 @@ class EpidemicEnvironment(gym.Env):
     def reset(self, seed=None, options=None):
         """
         Reinicia el entorno para un nuevo episodio.
+
+        Si se configuró `initial_infected_range`, cada episodio sortea un
+        tamaño de brote distinto dentro de ese rango, para que la política
+        deba aprender un comportamiento condicionado a la severidad real
+        (brotes leves -> intervenciones leves; brotes graves -> confinamiento
+        y aislamiento justificados) en vez de una única acción global fija.
         """
         super().reset(seed=seed)
-        
+
+        if self.initial_infected_range is not None:
+            lo, hi = self.initial_infected_range
+            self.initial_infected = int(self.np_random.integers(lo, hi + 1))
+
         self.current_step = 0
+        self._deceased_prev_count = 0
         self._initialize_spatial_geometry()
         self._initialize_agents()
         
         observation = self._get_observation()
-        info = {}
+        info = {"initial_infected": self.initial_infected}
         
         return observation, info
     

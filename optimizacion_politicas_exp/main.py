@@ -60,7 +60,7 @@ def main():
     parser.add_argument(
         '--save_path',
         type=str,
-        default='/mnt/user-data/outputs/epidemic_policy.pt',
+        default='model.pt',
         help='Ruta donde guardar el modelo entrenado'
     )
     parser.add_argument(
@@ -72,8 +72,20 @@ def main():
     parser.add_argument(
         '--initial_infected',
         type=int,
-        default=20,
-        help='Número de personas infectadas (brote inicial) al día 0'
+        default=None,
+        help='Número de personas infectadas (brote inicial) al día 0 (fijo, ignorado si se usan --initial_infected_min/max)'
+    )
+    parser.add_argument(
+        '--initial_infected_min',
+        type=int,
+        default=5,
+        help='Límite inferior del rango aleatorio de brote inicial (requiere --initial_infected_max)'
+    )
+    parser.add_argument(
+        '--initial_infected_max',
+        type=int,
+        default=80,
+        help='Límite superior del rango aleatorio de brote inicial (requiere --initial_infected_min)'
     )
     
     args = parser.parse_args()
@@ -83,15 +95,27 @@ def main():
     
     # Crear instancia del entorno epidemiológico
     print("\nInicializando entorno epidemiológico...")
-    env = EpidemicEnvironment(
-        population_size=500,
-        simulation_days=150,
-        num_houses=165,
-        num_zoonotic_foci=25,
-        num_safe_zones=25,
-        initial_infected=args.initial_infected
-    )
-    print(f"✓ Entorno inicializado correctamente (brote inicial: {args.initial_infected} casos)")
+    if args.initial_infected_min is not None and args.initial_infected_max is not None:
+        env = EpidemicEnvironment(
+            population_size=500,
+            simulation_days=150,
+            num_houses=165,
+            num_zoonotic_foci=25,
+            num_safe_zones=25,
+            initial_infected_range=(args.initial_infected_min, args.initial_infected_max)
+        )
+        print(f"✓ Entorno inicializado correctamente (brote inicial aleatorio: "
+              f"{args.initial_infected_min}-{args.initial_infected_max} casos por episodio)")
+    else:
+        env = EpidemicEnvironment(
+            population_size=500,
+            simulation_days=150,
+            num_houses=165,
+            num_zoonotic_foci=25,
+            num_safe_zones=25,
+            initial_infected=args.initial_infected
+        )
+        print(f"✓ Entorno inicializado correctamente (brote inicial fijo: {args.initial_infected} casos)")
     
     # Crear entrenador PPO
     trainer = PPOTrainer(

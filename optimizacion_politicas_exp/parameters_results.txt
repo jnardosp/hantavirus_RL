@@ -1,0 +1,8 @@
+results_health_light --> α=0.20 (economy), β=0.65 (health), γ=0.15 (social)
+
+results_health --> α=0.0 (economy), β=0.85 (health), γ=0.15 (social)
+
+results_money_light --> α=0.65 (economy), β=0.20 (health), γ=0.15 (social)
+
+results_money --> α=0.85 (economy), β=0.0 (health), γ=0.15 (social)
+

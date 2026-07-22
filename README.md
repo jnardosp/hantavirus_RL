@@ -2,7 +2,9 @@
 ### *Proyecto final para las clases “Introducción a Optimización” y “Matemáticas del Machine Learning”, semestre 2026-1S, Universidad Nacional de Colombia*
 ### Integrantes del grupo: Francisco Gutiérrez, Juan Soto, Camilo Acuña, Tuli Peña
 
-<img width="250" height="164" alt="Andes_virus" src="https://github.com/user-attachments/assets/a020ee0c-c84b-41a2-b863-50f26e8e88e0" />
+---
+
+<img width="426" height="280" alt="ANDV" src="https://github.com/user-attachments/assets/04820ad2-53b8-4248-a35f-e1b584fbd500" />
 
 El **Andes Orthohantavirus (ANDV)** representa una amenaza para nuestro continente debido a su alta tasa de letalidad y debido a que actualmente no existe una vacuna para este virus. Sin embargo, la escasez de datos epidemiológicos dificulta desarrollar modelos tradicionales capaces de identificar cuáles son las estrategias más efectivas para controlar su propagación.
 

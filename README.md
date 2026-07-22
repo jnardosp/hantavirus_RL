@@ -1,35 +1,9 @@
-# hantavirus_RL
-## Quantitative modeling of Andes Orthohantavirus Spatial Transmission using Reinforcement Learning
+# Simulación del Hantavirus Andino (ANDV) usando Reinforcement Learning
+### *Proyecto final para las clases “Introducción a Optimización” y “Matemáticas del Machine Learning”, semestre 2026-1S, Universidad Nacional de Colombia*
+### Integrantes del grupo: Francisco Gutiérrez, Juan Soto, Camilo Acuña, Tuli Peña
 
-Andes orthohantavirus (ANDV) is a highly lethal **(21-50%)** pathogen endemic to South America (mainly Argentina & Chile).
-Understanding how it spreads is vital because of its unique biological and epidemiological characteristics:
-* **Dual transmission routes:** Different to other hantaviruses that only spread from rodents to humans (zoonotic spillover), ANDV can also transmit directly from **person to person**.
-    * **Rodent to human:** Primary virus reservoir is a long-tailed pygmy rice rat (Oligoryzomys longicaudatus). Humans contract the virus by inhaling aerosolized virions from dry rodent excreta (urine, feces, saliva).
-    * **Human to human:** Secondary route of virus propagation happens through close, prolonged contact (within 2 meters or so) and is driven by respiratory droplets or saliva, particularly during the early symptomatic phase of the disease.
-* **Environmental mechanics:** 
-    Risk of adquisition of the virus is incremented in dry, dusty, poorly ventilated environments (through rodent - human route), social behaviour (human - human route) like wearing masks and distancing is crucial to reduce chances of infection.
+<img width="250" height="164" alt="Andes_virus" src="https://github.com/user-attachments/assets/a020ee0c-c84b-41a2-b863-50f26e8e88e0" />
 
-Because ANDV transmission is heavily influenced by local environmental exposure and social behavior, traditional aggregate epidemiological models fail to capture how individual movements affect infection risk.
+El **Andes Orthohantavirus (ANDV)** representa una amenaza para nuestro continente debido a su alta tasa de letalidad y debido a que actualmente no existe una vacuna para este virus. Sin embargo, la escasez de datos epidemiológicos dificulta desarrollar modelos tradicionales capaces de identificar cuáles son las estrategias más efectivas para controlar su propagación.
 
-To address this we will model these dynamics using an agent-based spatial grid simulation ([ContagionRL](https://openreview.net/forum?id=yPEASsx3hk) paradigm).
-
-## How to run:
-First create the environment:
-
-```bash
-conda env create --file environment.yml
-conda activate ContagionRL
-```
-
-You can clone ContagionRL repo, to use its base experiments.
-
-*Build* files to run **train_modified.py** (version with video rendering bug solved).
-
-In *ContagionRL/figureTraining/* there are some examples of simulations you can adapt them to work with **train_modified.py**, to run them with video rendering use the flag "--record-video".
-
-```bash
-#Example
-python "local_behaviour_exp/train_figure_visibility_changes.py" --record-video
-```
-
-You'll find a videos folder inside the new logs folder to see your current agent behaviour evolution.
+En este proyecto proponemos utilizar **Reinforcement Learning** para simular el virus y optimizar **Políticas de Intervención No Farmacéutica (NPI)**, con el objetivo de reducir la transmisión del virus y el número de muertes. De esta manera, el proyecto busca ser una herramienta de apoyo para los tomadores de decisiones, dándoles información sobre cuáles podrían ser las políticas de intervención más efectivas para reducir el impacto de este virus altamente mortal sobre el cual aún existe una cantidad de datos muy limitada.

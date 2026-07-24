@@ -264,7 +264,7 @@ class EpidemicAnalyzer:
         """
         report = []
         report.append("=" * 80)
-        report.append("REPORTE DE ANÁLISIS EPIDEMIOLÓGICO - SIMULACIÓN DEL VIRUS J")
+        report.append("REPORTE DE ANÁLISIS EPIDEMIOLÓGICO - SIMULACIÓN DEL HANTAVIRUS")
         report.append("=" * 80 + "\n")
         
         report.append("ESTADÍSTICAS AGREGADAS DE LA SIMULACIÓN\n")

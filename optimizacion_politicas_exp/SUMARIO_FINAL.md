@@ -2,7 +2,7 @@
 
 ## 📦 ENTREGA COMPLETA
 
-Se ha implementado un **proyecto académico de Aprendizaje por Refuerzo** completo y funcional para optimización de políticas epidemiológicas contra el Virus J ficticio.
+Se ha implementado un **proyecto académico de Aprendizaje por Refuerzo** completo y funcional para optimización de políticas epidemiológicas contra el Hantavirus Andino.
 
 ---
 
@@ -194,7 +194,7 @@ rewards, data = trainer.test_policy(num_episodes=5)
 ✓ **Parámetros documentados**: Cada valor tiene justificación
 ✓ **Reproducibilidad**: Seeds aleatorios configurables
 ✓ **Escalabilidad**: Código preparado para N > 100
-✓ **Fines educativos**: Simulación de virus ficticio
+✓ **Fines educativos**: Simulación de Hantavirus Andino
 
 ---
 
@@ -233,8 +233,6 @@ rewards, data = trainer.test_policy(num_episodes=5)
 ## ⚠️ LIMITACIONES Y ALCANCE
 
 ### Limitaciones Deliberadas
-- Población pequeña (N=100) para viabilidad computacional
-- Virus ficticio (no real) para fines educativos
 - Geometría simplificada (plano 2D)
 - Sin comportamiento adaptativo humano
 

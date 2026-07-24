@@ -1,6 +1,6 @@
 """
 Script principal para entrenamiento e inferencia de la política PPO
-de optimización de intervenciones no farmacéuticas contra el Virus J ficticio.
+de optimización de intervenciones no farmacéuticas contra el Hantavirus Andino.
 
 Uso:
     python main.py --mode train --iterations 50

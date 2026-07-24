@@ -15,7 +15,7 @@
 
 #### 1. **`epidemic_env.py`** - Entorno Gymnasium Vectorizado
    - **Líneas**: ~450
-   - **Descripción**: Simulación epidemiológica completa del Virus J
+   - **Descripción**: Simulación epidemiológica completa del Hantavirus Andino
    - **Características clave**:
      - Clase `EpidemicEnvironment(gym.Env)`
      - Espacios: observación [5] y acciones [5]

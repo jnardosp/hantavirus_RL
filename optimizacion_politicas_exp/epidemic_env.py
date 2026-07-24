@@ -1,5 +1,5 @@
 """
-Modelo Basado en Agentes Vectorizado para Simulación Epidemiológica del Virus J
+Modelo Basado en Agentes Vectorizado para Simulación Epidemiológica del Hantavirus Andino
 Entorno Gymnasium con operaciones NumPy/SciPy para máximo rendimiento computacional
 """
 
@@ -13,7 +13,7 @@ from typing import Tuple, Dict, Any
 class EpidemicEnvironment(gym.Env):
     """
     Entorno de aprendizaje por refuerzo para optimizar políticas de contención
-    ante brotes epidémicos del Virus J ficticio.
+    ante brotes epidémicos del Hantavirus Andino ficticio.
     
     Características:
     - Simulación espacial continua 2D vectorizada con NumPy
@@ -37,8 +37,8 @@ class EpidemicEnvironment(gym.Env):
         Inicialización del entorno epidemiológico.
         
         Args:
-            population_size: Número de agentes humanos (N=100)
-            simulation_days: Horizonte temporal de simulación (T=60 días)
+            population_size: Número de agentes humanos (N=500)
+            simulation_days: Horizonte temporal de simulación (T=150 días)
             num_houses: Residencias (núcleos familiares)
             num_zoonotic_foci: Focos de riesgo zoonótico rural
             num_safe_zones: Zonas seguras urbanas

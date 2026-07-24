@@ -288,8 +288,8 @@ class EpidemicAnalyzer:
             total_cases.append(sum(1 for x in traj['deceased'] if x > 0))
         
         report.append(f"Número de episodios simulados: {num_episodes}")
-        report.append(f"Duración de cada simulación: 60 días")
-        report.append(f"Tamaño poblacional: 100 agentes\n")
+        report.append(f"Duración de cada simulación: {simulation_days} días")
+        report.append(f"Tamaño poblacional: {self.env.N} agentes\n")
         
         report.append("ESTADO FINAL (Promedio):")
         report.append(f"  - Susceptibles: {np.mean(final_susceptible):.2f} (±{np.std(final_susceptible):.2f})")

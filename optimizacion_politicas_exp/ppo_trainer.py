@@ -1,6 +1,6 @@
 """
 Implementación de Proximal Policy Optimization (PPO) con arquitectura Actor-Crítico
-para optimización de políticas de contención epidemiológica del Virus J.
+para optimización de políticas de contención epidemiológica del Hantavirus Andino.
 
 Características:
 - Redes neuronales parametrizadas independientemente para Actor y Crítico

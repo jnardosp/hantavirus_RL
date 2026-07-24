@@ -3,7 +3,7 @@
 ║                   🎯 PROYECTO IMPLEMENTADO EXITOSAMENTE 🎯                ║
 ║                                                                            ║
 ║          Optimización de Políticas Epidemiológicas con PPO                ║
-║              Simulación del Virus J (Ficticio) - Educativo                ║
+║              Simulación del Hantavirus Andino              ║
 ║                                                                            ║
 ╚════════════════════════════════════════════════════════════════════════════╝
 
@@ -224,7 +224,7 @@
   ✓ Fundamentos matemáticos: SEIR + MDP + PPO
   ✓ Parámetros documentados: Cada valor con justificación
   ✓ Reproducibilidad: Seeds aleatorios configurables
-  ✓ Fines educativos: Virus ficticio, simulación
+  ✓ Fines educativos: Hantavirus Andino, simulación
   ✓ Extensibilidad: Código modular y limpio
   ✓ Escalabilidad: Preparado para N > 100
   ✓ Documentación: 2000+ líneas de documentación
@@ -253,8 +253,6 @@
 ═══════════════════════════════════════════════════════════════════════════
 
   LIMITACIONES DELIBERADAS:
-  • Población pequeña (N=100) para viabilidad computacional
-  • Virus ficticio (no real) para fines educativos
   • Geometría simplificada (plano 2D)
   • Sin comportamiento adaptativo humano
 
